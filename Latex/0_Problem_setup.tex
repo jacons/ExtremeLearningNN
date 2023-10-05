@@ -1,0 +1,17 @@
+\section{Problem setup}
+(M) is a so-called extreme learning, i.e., a neural network with one hidden layer, $ y= W_2\sigma(W_1x)$ , where the weight matrix for the hidden layer $W_1$ is a fixed random matrix, $\sigma()$ is an elementwise activation function of your choice, and the output weight matrix $W_2$is chosen by solving a linear least-squares problem with $L_2$ regularization.
+
+(A1) is an algorithm of the class of accelerated gradient methods, applied to (M).
+
+(A2) is a closed-form solution with the normal equations and your own implementation of Cholesky (or LDL) factorization.
+
+\section{Introduction}
+
+\subsection{Extreme Neural Network}
+A variant of classical Feed-Forward Neural Network (FFNN) is the Extreme Neural Network (ENN). The difference is, typically, in the learning phase leaving the identical structure. In our project we take into account an ENN with one hidden layer. The peculiarity of this Network is that the learning procedure involves only the last layer (known as \textit{readout}), leaving the remaining layers untrained (i.e. with a fixed weight initialized randomly at the beginning). Several experiments show that ENN converges faster than traditional methods and the performance is comparable \cite{huang2004extreme}. ENN has been successfully applied in many real-time learning tasks for classification, clustering, and regression. The original paper can be found in \cite{huang2004extreme}. The key aspect of ENN is that the randomized hidden layer behaves as a random projection of the input. Often this projection increases the dimension of the input into a space where the data, hopefully, is more separable. It's important also the activation function (e.g Sigmoid, TanH, ReLU) between the random layer and the readout which ensure the non-linearity . The ENN perform the output in the following way, first it takes the input and perform the hidden state:
+
+\[ \bold{h} = \sigma(W_1\bold{x})\]
+
+where $x = (x_1, x_2 ... x_{n-1},x_n)^T \in \mathbb{R}^n$ is the input and $W_1 \in \mathbb{R}^{h \times n}$ is a untrained and fixed weight, then it carries out the output with trained $W_2\in \mathbb{R}^{o \times h}$ in order to obtain $o \in \mathbb{R}^{o}$:
+\[ \bold{o} = W_2\bold{h} \]
+We can observe that in the last layer we do not deploy the activation function.

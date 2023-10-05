@@ -1,4 +1,4 @@
-\documentclass[18p]{article}
+\documentclass[a4paper, 15pt]{extarticle}
 \usepackage[T1]{fontenc}
 \usepackage[english]{babel}
 \usepackage{lastpage} %info sul # dell'ultima pagina del documento
@@ -17,19 +17,37 @@
 \usepackage{guit}
 \usepackage{algorithm}
 \usepackage{algorithmic}
-\addbibresource{Bibliografia.bib}
 \usepackage{multicol}
 \usepackage{minted}
-\definecolor{bg}{rgb}{0.95,0.95,0.95}
+\usepackage{fancyhdr}
+\usepackage{breakurl}  
+\usepackage[colorlinks=true]{hyperref}
+\usepackage{listings}
+\usepackage{tikz}
+\usepackage{longtable}
+\usepackage{appendix} %aggiunge dei comandi per l'appendice
+\usepackage{parskip} %aiuta LaTeX a trovare il miglior stile per i page break
+\usepackage{setspace}
+\usepackage{palatino}
+\usepackage{amsmath,amsthm,amssymb} % mathematical tools
+\usepackage{systeme}          % for Solution 
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\usepackage[colorinlistoftodos,prependcaption]{todonotes}
+
+
+
+\newtheorem{definition}{Definition}  % "aggiunge definition"
+\newtheorem{corollary}{Corollary}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+
 
 \graphicspath{ {./images/} }
-\usepackage{fancyhdr} %per mod
-
-
-\usepackage{breakurl}%\url{...} può continare alla linea successiva. (si può andare a capo)     
-
+\addbibresource{Bibliografia.bib}
+\definecolor{bg}{rgb}{0.95,0.95,0.95}
 \definecolor{Maroon}{cmyk}{0, 0.87, 0.68, 0.32}
-\usepackage[colorlinks=true]{hyperref}
 \hypersetup{
 	colorlinks=true,
 	citecolor=black,
@@ -37,27 +55,15 @@
 	linkcolor=black, % colore dei link interni
 	urlcolor=Maroon  % colore dei link interniesterni
 }
-
 % Keywords command
 \providecommand{\keywords}[1] {
   \small	
   \textbf{\textit{Keywords---}} #1
 }
 
-\usepackage{listings}
-
-\usepackage{tikz}
-
-\usepackage{longtable}
-\usepackage{appendix} %aggiunge dei comandi per l'appendice
-\usepackage{parskip} %aiuta LaTeX a trovare il miglior stile per i page break
-\usepackage{setspace}
-
-\usepackage{palatino}
-
 \title{{\small Università di Pisa, Master Degree in Computer Science \\ Course of ''Computational Mathematics for Learning and Data Analysis'' (CM)} \\ \vspace{0.7em}
 \huge{\textbf{Extreme learning model with Accelerated gradient and Cholesky factorization methods}} \\\vspace{0.9em} } 
-\author{Iommi Andrea, Carfi Giacomo \\ \vspace{0.7em}
+\author{Iommi Andrea, Carfì Giacomo \\ \vspace{0.7em}
 \vspace{0.4em}}
 
 \date{\today}
@@ -75,20 +81,19 @@
 
 \begin{document}
     \maketitle
-
     \vspace{0.3cm}
 
-    \section{Problem setup}
-%    \input{0_Problem_setup.tex}
+    \input{0_Problem_setup}
+    \input{1_Accelerated_G}
+    \input{2_Cholesky}
 
-    \section{Related Works}
-%    \input{1_Related_Works.tex}
     
-    \section{Code and implementation}
-    
-    \section{Experimental set-up}
-    \section{Experimental results}
-    \section{Overall conclusions}
+%    \section{Related Works}
+%    \input{1_Related_Works.tex}  
+%    \section{Code and implementation}
+%    \section{Experimental set-up}
+%    \section{Experimental results}
+%    \section{Overall conclusions}
     
     \newpage
     \printbibliography
