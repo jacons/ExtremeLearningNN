@@ -1,20 +1,20 @@
 \subsection{Direct method with Cholesky factorization}
-In the second algorithm we change slightly the notation. We denote the input data $X \in \mathbb{R}^{f \times n}$ where $f$ are the number of feature and $n$ is number of example, of course $f << n$. And $Y \in \mathbb{R}^{o \times n}$ where $o$ is the output dimension. Talking about the direct method, we observe the problem from another point of view. We want find the $W_2$ that minimize the difference between $W_2\sigma(W_1X)$ and $Y$ (in norm), more precisely, we formulate the problem into following expression:
+In the second algorithm we change slightly the notation. We denote the input data $X \in \mathbb{R}^{f \times n}$ where $f$ are the number of feature and $n$ is number of example, of course $f << n$. And $Y \in \mathbb{R}^{o \times n}$ where $o$ is the output dimension $o << n$. Talking about the direct method, we observe the problem from another point of view. We want find the $W_2$ that minimize the following expression:
 
 \begin{equation}
-\label{formula:LS}
+\label{formula:LS1}
 \min_{W_2} \|W_2\sigma(W_1X) - Y\|_2^2  + \alpha^2\|W_2\|_2
 \end{equation}
 
-For simplicity we will use the following equation knowing that ($H = \sigma(W_1X)$) and $H \in \mathbb{R}^{h \times n}$. $h$ is the hidden dimension of the second layer and $h << n$.
+For simplicity we will use the (Eq. \ref{formula:LS2}       ) knowing that ($H = \sigma(W_1X)$) and $H \in \mathbb{R}^{h \times n}$. $h$ is the hidden dimension of the second layer and $h << n$.
 
 \begin{equation}
-\label{formula:LS}
+\label{formula:LS2}
 \min_{W_2} \|W_2H- Y\|_2^2  + \alpha^2\|W_2\|_2
 \end{equation}
 
 
-The second term of (Eq. \ref{formula:LS}) is the $L_2$ regularization \cite{ridge_reg}. Intuitively, it aims to keep low (small values) $W_2$ in order to avoid over-fitting and improve the generalization of the model. However, in the following sections, we will explore the behavior of the model changing the $\alpha$ parameter. The least-square problem can be solved in plenty of methods, but in our project, we are focused into one single approach: the Cholesky factorization (or decomposition) method.
+The second term of (Eq. \ref{formula:LS2}) is the $L_2$ regularization \cite{ridge_reg}. Intuitively, it aims to keep low (small values) $W_2$ in order to avoid over-fitting and improve the generalization of the model. However, in the following sections, we will explore the behavior of the model changing the $\alpha$ parameter. The least-square problem can be solved in plenty of methods, but in our project, we are focused into one single approach: the Cholesky factorization (or decomposition) method.
 
 First of all we need to define some useful notions:
 \begin{definition}
@@ -30,7 +30,7 @@ First of all we need to define some useful notions:
 From (Def. \ref{def:a_trasposea}) we can say that $HH^T \succ 0$ thus we can apply the (Th. \ref{th:th_choleksy}). Thus $HH^T = R^TR$ where $R^T \in \mathbb{R}^{h \times h}$.
 
 \begin{equation}
-    \label{def:gradient_cholesky}
+    \label{def:gradient_cholesky1}
     \begin{aligned}
         \min_{W_2} \|W_2H - Y\|_2^2 = \min_{W_2} \|W_2HH^T- YH^T\|_2^2 = \min_{W_2} \|W_2R^TR- YH^T\|_2^2\\
     \end{aligned}
@@ -39,7 +39,7 @@ From (Def. \ref{def:a_trasposea}) we can say that $HH^T \succ 0$ thus we can app
 For simplicity we set $R^TR = C$. We know that $C^T = C$ because $(R^TR)^T = R^TR$.
 
 \begin{equation}
-    \label{def:gradient_cholesky}
+    \label{def:gradient_cholesky2}
     \begin{aligned}
         \min_{W_2} \|W_2C- YH^T\|_2^2 &= \\
         &= \min_{W_2} (W_2C - YH^T)^T(W_2C - YH^T)\\
@@ -49,7 +49,7 @@ For simplicity we set $R^TR = C$. We know that $C^T = C$ because $(R^TR)^T = R^T
     \end{aligned}
 \end{equation}
 
-We also observe that $CW_2^TYH^T$ and $HY^TW_2C$ are equal. The gradient of (Eq. \ref{def:gradient_cholesky}):
+We also observe that $CW_2^TYH^T$ and $HY^TW_2C$ are equal. The gradient of (Eq. \ref{def:gradient_cholesky2}):
 
 \begin{equation}
     \begin{aligned}
@@ -92,12 +92,29 @@ To find $W_2$ we solve the following linear system:
 We can notice that the second equation in \ref{formula:linearsyscholesyk} is composed by $R \in \mathbb{R}^{h \times h} $  upper triangular and $YH^T \in \mathbb{R}^{o \times h}$ thus we can easily find $z$ by backward substitution. 
 Once found $z$ we can apply the forward substitution on the first equation to finally find $W_2$.
 
+
+\begin{algorithm}
+    \caption{Pseudo-code of Direct method with Cholesky}
+    \label{alg:code_cholesky}
+    \begin{algorithmic}[1]
+        \STATE Get $X \in \mathbb{R}^{f \times n}$
+        \STATE Get $Y \in \mathbb{R}^{o \times n}$
+        \STATE Compute $H = \sigma(W_1X)$
+        \STATE Compute $HH^T$ and $YH^T$
+        \STATE Compute Cholesky factorization $R^TR = HH^T$
+        \STATE Find in $z$ in $zR = YH^T$ by back-substitution
+        \STATE Find in $W_2$ in $W_2R^T = z$ by back-substitution
+        \RETURN Weight matrix $W_2$
+    \end{algorithmic}
+\end{algorithm}
+
+
 \subsubsection{Complexity}
 To analyze the complexity, we have to take into consideration all operations that are involved. In the table (Tab. \ref{table:complexity}) we show which are the steps and their relative complexity.
 
 \begingroup
     \renewcommand{\arraystretch}{2} % Default value: 1
-    \begin{table}[!h]
+    \begin{table}
         \begin{center}
             \begin{tabular}{ |c|c|c| } 
                 \hline
@@ -105,7 +122,7 @@ To analyze the complexity, we have to take into consideration all operations tha
                 \hline\hline
                 1 & $HH^T$ & $h^2n$ \\ 
                 \hline
-                2 & $yH^T$ & $hno$ \\ 
+                2 & $YH^T$ & $hno$ \\ 
                 \hline
                 3 & $R^TR = HH^T$ & $\frac{1}{3}h^3 + \mathcal{O}(h^2)$ \\ 
                 \hline
@@ -119,6 +136,4 @@ To analyze the complexity, we have to take into consideration all operations tha
         \end{center}
     \end{table}
 \endgroup
-As we can notice, we most time consuming part is the Cholesky decomposition (step 3). We can conclude that the algorithm has the complexity equal to $\mathcal{O}(h^3)$.
-
-\subsubsection{Stability}
+As we can notice, we most time consuming part is the Cholesky decomposition (step 3). We can conclude that the algorithm has the overall complexity equal to $\mathcal{O}(h^3)$.

@@ -12,8 +12,9 @@ ACM are iterative methods like \textit{Heavy Ball} \cite{heavyball} gradient met
 The Heavy Ball Method uses a simple update rule, which is a combination of the negative gradient direction and a fraction of the previous update direction (momentum), we can see the update rule in (Eq. \ref{eq:updateruleheavyball}), where $\alpha$ is the step size, $\beta$ is the momentum term, and $\nabla f(x^{(k)})$ is the gradient of the objective function at point $x^{(k)}$. Note that $\alpha$ and $\beta$ changes at each iteration but they can be fixed.
 
 \begin{equation}
-\label{eq:updateruleheavyball}
-x^{(k+1)} = x^{(k)} - \alpha^{(k)} \nabla f(x^{(k)}) + \beta^{(k)}(x^{(k)} - x^{(k-1)})
+    \label{eq:updateruleheavyball}
+    x^{(k+1)} = 
+    x^{(k)} - \alpha^{(k)} \nabla f(x^{(k)}) + \beta^{(k)}(x^{(k)} - x^{(k-1)})
 \end{equation}
 
 
@@ -29,26 +30,26 @@ x^{(k+1)} &= y^{(k+1)} -\alpha \nabla f(y^{(k+1)})
 \end{aligned}
 \end{equation}
 
-\begin{algorithm}
-\caption{Pseudocode of Accelerated Gradient Method (ACM)}
-\label{alg:ACG}
-\begin{algorithmic}[1]
-\STATE Initialize $x^{(0)}$ \COMMENT{Initial parameter vector}
-\STATE Initialize $y^{(0)} = x^{(0)}$ \COMMENT{Initialize look-ahead point}
-\STATE Initialize step size $\alpha$ and  momentum parameter $\beta$
-\STATE Set the maximum number of iterations $T$
-\STATE Set accuracy $\epsilon$
-\STATE k = 0
-\WHILE{ ( $k < T$ and $|| \nabla f(x) || > \epsilon $ )}
-    \STATE Update $y^{(k+1)} = x^{(k)} + \beta (x^{(k)} - x^{(k-1)}) $ \COMMENT{Look-ahead step}
-    \STATE Update $x^{(k+1)} = y^{(k+1)} -\alpha \nabla f(y^{(k+1)})$ \COMMENT{Actual update with anti-gradient}
-    \STATE k = k+1
-\ENDWHILE
-\RETURN Final parameter vector $x^{(T)}$
-\end{algorithmic}
-\end{algorithm}
 
-\todo[inline]{Risolvere lo =0 molesto}
+
+\begin{algorithm}
+    \caption{Pseudocode of Accelerated Gradient Method (ACM)}
+    \label{alg:ACG}
+    \begin{algorithmic}[1]
+        \STATE Initialize $x^{(0)}$ \COMMENT{Initial parameter vector}
+        \STATE Initialize $y^{(0)} = x^{(0)}$ \COMMENT{Initialize look-ahead point}
+        \STATE Initialize step size $\alpha$ and  momentum parameter $\beta$
+        \STATE Set the maximum number of iterations $T$
+        \STATE Set accuracy $\epsilon$
+        \STATE k = 0
+        \WHILE{ ( $k < T$ and $|| \nabla f(x) || > \epsilon $ )}
+            \STATE Update $y^{(k+1)} = x^{(k)} + \beta (x^{(k)} - x^{(k-1)}) $ \COMMENT{Look-ahead step}
+            \STATE Update $x^{(k+1)} = y^{(k+1)} -\alpha \nabla f(y^{(k+1)})$ \COMMENT{Actual update with anti-gradient}
+            \STATE k = k+1
+        \ENDWHILE
+    \RETURN Final parameter vector $x^{(T)}$
+    \end{algorithmic}
+\end{algorithm}
 
 Regarding our tasks, the objective function that we want to minimize is the Loss function (Eq. \ref{eq:loss}), where $y$ is the expected output and $\hat{y}$ is the output of the model. The error function is defined in (Eq.\ref{eq:error}) and it is the sum of squared error, the last term is the L2 regularization term as defined in \cite{ridge_reg}.  We want to learn our model parameters $\theta = \{\textbf{w}\}$, minimizing the loss and updating the parameters accordingly to the update rule specified above. 
 
@@ -66,7 +67,7 @@ Error(y, \hat{y}) = \sum_{n=1}^{N}(y_i - \hat{y}_i)^2 = || y - \hat{y} ||_2^2
 \subsubsection{Convergence Properties}
 First of all, we must specify a few definitions that will be useful in explaining the complexity of the algorithm. In particular, we say:
 
-\todo[inline]{tutte queste definizioni si leggono male, nel caso cambiare stile}
+\todo[inline]{Tutte queste definizioni si leggono male, nel caso cambiare stile}
 \begin{definition}
     \label{def:convex_function}
     A function f is said \textbf{convex} if $\forall x, z \in \mathbb{R}^n$, $ \alpha \in [0,1] $ it holds $ \alpha f(x) + (1-\alpha )f(z) \geq f(\alpha x + (1- \alpha ) z)$
@@ -118,7 +119,7 @@ So, if all these properties hold, we can use the Theorem in \ref{th:convergencer
 
 \begin{theorem}
 \label{th:convergencerate}
-Generalized Accelerated Gradient Methods with fixed stepsize $\alpha \leq \frac{1}{L}$ satisfies: \\
+Generalized Accelerated Gradient Methods with fixed step-size $\alpha \leq \frac{1}{L}$ satisfies: \\
 $f(x^{(k)}) - f(x^*) \leq \frac{2 || x^{(0)} - x^* ||^2}{\alpha (k+1)^2} = \epsilon$
 
 \end{theorem}
@@ -129,6 +130,3 @@ So the convergence rate for ACM is $O(\frac{1}{k^2})$ and to get a precision suc
 %To prove the above convergence, therefore, we proceed as follows. $g$ is Lipschitz Continuous with constant $L > 0$ and stepsize $\alpha \leq \frac{1}{L}$, so it implies
 
 %\[ g(x^{k+1}) \leq  g(y^{k+1}) + \nabla g(y^{k+1})^T \]
-
-
-\newpage

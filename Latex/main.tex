@@ -1,100 +1,60 @@
-\documentclass[a4paper, 15pt]{extarticle}
-\usepackage[T1]{fontenc}
-\usepackage[english]{babel}
-\usepackage{lastpage} %info sul # dell'ultima pagina del documento
-\usepackage{geometry}
-\usepackage{blindtext}
-\usepackage[nottoc]{tocbibind} %Adds "References" to the table of contents
-\usepackage{url}
-\usepackage[colorlinks=true]{hyperref}
-\usepackage{float}
-\usepackage{subcaption}
-\usepackage{color}
-\usepackage[title]{appendix}
-\usepackage{comment}
-\usepackage[autostyle, italian=guillemets]{csquotes}
-\usepackage[backend=biber, style=numeric]{biblatex}
-\usepackage{guit}
-\usepackage{algorithm}
-\usepackage{algorithmic}
-\usepackage{multicol}
-\usepackage{minted}
-\usepackage{fancyhdr}
-\usepackage{breakurl}  
-\usepackage[colorlinks=true]{hyperref}
-\usepackage{listings}
-\usepackage{tikz}
-\usepackage{longtable}
-\usepackage{appendix} %aggiunge dei comandi per l'appendice
-\usepackage{parskip} %aiuta LaTeX a trovare il miglior stile per i page break
-\usepackage{setspace}
-\usepackage{palatino}
-\usepackage{amsmath,amsthm,amssymb} % mathematical tools
-\usepackage{systeme}          % for Solution 
-\usepackage{algorithm}
-\usepackage{algpseudocode}
+\documentclass[a4paper,15pt]{extarticle}
 
+% Preambolo
+\usepackage[english]{babel} % Lingua italiana
+\usepackage[utf8]{inputenc} % Codifica dei caratteri
+\usepackage[T1]{fontenc} % Codifica dei font
+\usepackage{graphicx} % Per l'inserimento di immagini
+\usepackage{comment}
+\usepackage{amsmath,amsfonts,amssymb,amsthm,systeme} % Pacchetti per la matematica
+
+\usepackage{hyperref} % Collegamenti ipertestuali
+\usepackage{listings} % Per inserire codice sorgente
+\usepackage{fancyhdr} % Per personalizzare l'intestazione e il piè di pagina
+\usepackage{titlesec} % Per personalizzare il formato dei titoli
+% Impostazioni dei margine
+\usepackage[left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm]{geometry}
+\usepackage{parskip}
+
+\usepackage{algorithm,algorithmic}
 \usepackage[colorinlistoftodos,prependcaption]{todonotes}
 
-
-
-\newtheorem{definition}{Definition}  % "aggiunge definition"
-\newtheorem{corollary}{Corollary}
-\newtheorem{theorem}{Theorem}[section]
-\newtheorem{lemma}[theorem]{Lemma}
-
-
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
 \graphicspath{ {./images/} }
-\addbibresource{Bibliografia.bib}
-\definecolor{bg}{rgb}{0.95,0.95,0.95}
-\definecolor{Maroon}{cmyk}{0, 0.87, 0.68, 0.32}
-\hypersetup{
-	colorlinks=true,
-	citecolor=black,
-	filecolor=black,
-	linkcolor=black, % colore dei link interni
-	urlcolor=Maroon  % colore dei link interniesterni
-}
-% Keywords command
-\providecommand{\keywords}[1] {
-  \small	
-  \textbf{\textit{Keywords---}} #1
-}
 
-\title{{\small Università di Pisa, Master Degree in Computer Science \\ Course of ''Computational Mathematics for Learning and Data Analysis'' (CM)} \\ \vspace{0.7em}
-\huge{\textbf{Extreme learning model with Accelerated gradient and Cholesky factorization methods}} \\\vspace{0.9em} } 
-\author{Iommi Andrea, Carfì Giacomo \\ \vspace{0.7em}
-\vspace{0.4em}}
 
+% Impostazioni per il formato dei titoli dei capitoli e delle sezioni
+\titleformat{\chapter}[display]{\normalfont\huge\bfseries}{\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalfont\normalsize\bfseries}{\thesubsubsection}{1em}{}
+
+% Pagina del titolo
+\title{\textbf{Extreme learning model with Accelerated gradient and Cholesky factorization methods}}
+\author{Iommi Andrea, Carfì Giacomo}
 \date{\today}
-
-\makeatletter
 
 \def\@maketitle{
 		\begin{center}
-		{\@title }\\ 
-		{\@author}\\ 
-		\@date\\[4ex]
-		\includegraphics[scale = 0.35]{logo-Pisa.jpeg}
-\end{center}}
+    		{\@title}\\ 
+    		{\@author}\\ 
+    		\@date\\[4ex]
+                \includegraphics[width=0.5\textwidth]{logo-Pisa.jpeg}
+        \end{center}
+}
 \makeatother
 
+
+% Inizio del documento
 \begin{document}
     \maketitle
-    \vspace{0.3cm}
-
+    \vspace{0.3cm}  
     \input{0_Problem_setup}
     \input{1_Accelerated_G}
     \input{2_Cholesky}
 
-    
-%    \section{Related Works}
-%    \input{1_Related_Works.tex}  
-%    \section{Code and implementation}
-%    \section{Experimental set-up}
-%    \section{Experimental results}
-%    \section{Overall conclusions}
-    
-    \newpage
-    \printbibliography
+    \bibliographystyle{plain}
+    \bibliography{Bibliografia.bib}
+
 \end{document}
