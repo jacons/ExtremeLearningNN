@@ -23,12 +23,14 @@ class ENeuralN:
     def fit_cholesky(self, x: ndarray, y: ndarray):
         """
         Fit the neural network using the Cholesky factorization
-        In order to find the best "w" we need to solve the following: w(R.T * R) = Y.T * H
+        to find the best "w" we need to solve the following: w(R.T * R) = Y * H.T
         :param x: Input dataset
         :param y: Target
         :return: None
         """
-
+        if x.shape[1] < self.w1.shape[0]:
+            print("Error")
+            return
         # Perform the first (resevoir) layer
         h = self.resevoir(x)
         # (1) Apply the cholesky factorization
