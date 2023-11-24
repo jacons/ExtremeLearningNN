@@ -42,5 +42,5 @@ def max_eigenvalue(H: ndarray) -> float:
     """
     Compute the hessian of the matrix H and return the maximum eigenvalue
     """
-    hessian = 2*H*H.T
+    hessian = 2*(H @ H.T)
     return np.max(np.linalg.eigvals(hessian))
