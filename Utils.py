@@ -37,9 +37,10 @@ def norm(a: ndarray, b: ndarray) -> ndarray:
     return np.linalg.norm((a - b))
 
 
-def max_eigenvalue(H: ndarray) -> float:
+def maxmin_eigenvalue(H: ndarray) -> (float, float):
     """
-    Compute the hessian of the matrix H and return the maximum eigenvalue
+    Compute the hessian of the matrix H and return the maximum and minimum eigenvalue
     """
     hessian = 2 * H @ H.T
-    return np.max(np.linalg.eigvals(hessian))
+    eigenvalues = np.linalg.eigvals(hessian)
+    return np.max(eigenvalues), np.min(eigenvalues)
