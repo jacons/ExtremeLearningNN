@@ -1,5 +1,8 @@
+import sys
+
 import numpy as np
 from numpy import ndarray, eye
+from numpy.linalg import norm
 from numpy.random import rand
 
 from NumericalUtils import cholesky, backwardSub, forwardSub
@@ -47,54 +50,97 @@ class ENeuralN:
     def calc_lambda(lambda_):
         return (1 + np.sqrt(1 + 4 * np.power(lambda_, 2))) / 2
 
-    def fit_fista(self, x: ndarray, y: ndarray, max_iter: int) -> list[float]:
+    def fit_fista(self, x: ndarray, y: ndarray, max_iter: int, eps: float = 0) -> list[float]:
+        """
+        :param x: array X [ feature, examples ]
+        :param y: array target [ 2, examples ]
+        :param max_iter: Number of max iteration
+        :param eps: gradient threshold
+        :return:
+        """
         # Perform the first (resevoir) layer
         h = self.resevoir(x)
+
         # Perform the lipschitz constant
         L, tau = maxmin_eigenvalue(h)
-        step_size = (2 / L+tau)  # step-size changed from 1/L
 
         # Initialize with random matrix (random weight)
-        self.w2 = rand(2, h.shape[0])
+        self.w2 = np.random.uniform(-1, 1, (2, h.shape[0]))
         # "Previous weight"
         w2_old = self.w2.copy()
 
-        c, lambda_k_1, current_iter = 0, 0, 0
+        beta, lambda_k_1, current_iter = 0, 0, 0
+        step_size = 2 / (L + tau)  # step-size changed from 1/L
         mse_errors = []
+        grad_zk = sys.maxsize
 
-        while current_iter < max_iter:
-            z_k = w2_old + c * (self.w2 - w2_old)
+        while (current_iter < max_iter) and (norm(grad_zk) > eps):
+            # ---- Gradient ----
+            z_k = w2_old + beta * (self.w2 - w2_old)
             grad_zk = (z_k @ h - y) @ h.T
-            self.w2 = z_k - step_size * grad_zk - self.regularization * self.w2
+            # ---- Gradient ----
 
+            # ---- Update rule ----
+            self.w2 = z_k - step_size * grad_zk - self.regularization * self.w2
+            # ---- Update rule ----
+
+            # ---- Update "beta" ----
             lambda_k = self.calc_lambda(lambda_k_1)
-            c = (lambda_k_1 - 1) / lambda_k
+            beta = (lambda_k_1 - 1) / lambda_k
             lambda_k_1 = lambda_k
+            # ---- Update "beta" ----
+
             w2_old = self.w2.copy()
 
+            # output predicted
             y_pred = self.w2 @ h
-            mse_error = MSE(y, y_pred)
+            mse_error = MSE(y, y_pred)  # MSE between the target and the output predicted
             mse_errors.append(mse_error)
             current_iter += 1
 
         return mse_errors
 
-    def fit_standard_SDG(self, x: ndarray, y: ndarray, max_iter: int):
-        # TO DO
-        pass
+    def fit_SDG(self, x: ndarray, y: ndarray, max_iter: int,
+                lr: float, beta: float = 0, eps: float = 0) -> list[float]:
+        """
+        :param x: array X [ feature, examples ]
+        :param y: array target [ 2, examples ]
+        :param max_iter: Number of max iteration
+        :param lr: learning rate if 0 then will be used 1/L
+        :param beta: momentum term
+        :param eps: gradient threshold
+        """
+        # Perform the first (resevoir) layer
+        h = self.resevoir(x)
+
+        lr = 1 / maxmin_eigenvalue(h)[0] if lr <= 0 else lr
+
+        # Initialize with random matrix (random weight)
+        self.w2 = np.random.uniform(-1, 1, (2, h.shape[0]))
+
+        # "Previous weight"
+        w2_old = self.w2.copy()
+        w2_old_old = self.w2.copy()
+
+        mse_errors = []
+        grad_w2 = sys.maxsize
+        current_iter = 0
+
+        while (current_iter < max_iter) and (norm(grad_w2) > eps):
+            grad_w2 = (w2_old @ h - y) @ h.T
+            # ---- Update rule ----
+            self.w2 = w2_old - lr * grad_w2 + beta * (w2_old - w2_old_old) - self.regularization * self.w2
+            # ---- Update rule ----
+
+            w2_old_old = w2_old.copy()
+            w2_old = self.w2.copy()
+
+            # output predicted
+            y_pred = self.w2 @ h
+            mse_error = MSE(y, y_pred)  # MSE between the target and the output predicted
+            mse_errors.append(mse_error)
+            current_iter += 1
+        return mse_errors
 
     def __call__(self, x: ndarray) -> ndarray:
         return self.w2 @ self.resevoir(x)
-
-
-"""
-        c0 = 1
-        y_0 = self.w2 * c0 * (self.w2 - w2_old)
-        grad_y_0 = (y_0 @ h - target) @ h.T
-        self.w2 = y_0 - (1 / L) * grad_y_0
-
-        c1 = (lambda_2 - 1) / lambda_1
-        y_1 = self.w2 + c1 * (self.w2 - w2_old)
-        grad_y_1 = (y_0 @ h - target) @ h.T
-        self.w2 = y_1 - (1 / L) * grad_y_1
-"""

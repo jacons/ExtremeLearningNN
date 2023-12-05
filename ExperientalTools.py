@@ -1,13 +1,14 @@
 import sys
-from typing import Tuple
+from typing import Tuple, Literal
 
 import numpy as np
 import pandas as pd
+from pandas import DataFrame
 from sklearn.model_selection import train_test_split, ParameterGrid
 from tqdm import tqdm
 
 from ExtremeNN import ENeuralN
-from Utils import MSE
+from Utils import MSE, sigmoid
 
 
 def prepare_dataset(train_path: str, test_path: str = None):
@@ -28,17 +29,68 @@ def prepare_dataset(train_path: str, test_path: str = None):
 
 
 def fit_cholesky(x_train: np.ndarray, y_train: np.ndarray, hidden: int,
-                 lambda_: float, activation=None, features_x: int = 10) -> ENeuralN:
+                 lambda_: float, activation=sigmoid, features_x: int = 10) -> ENeuralN:
+    """
+    :param x_train: array X [ feature, examples ]
+    :param y_train: array target [ 2, examples ]
+    :param hidden: Hidden size
+    :param lambda_: L2-Regularization term
+    :param activation: activation function
+    :param features_x: Number of input features
+    """
     model = ENeuralN(features_x, hidden, lambda_, activation)
     model.fit_cholesky(x_train, y_train)
     return model
 
 
 def fit_fista(x_train: np.ndarray, y_train: np.ndarray, hidden: int, lambda_: float,
-              max_inters: int = None, activation=None, features_x: int = 10) -> Tuple[ENeuralN, list[float]]:
+              activation=None, max_inters: int = None, eps: float = 0,
+              features_x: int = 10) -> Tuple[ENeuralN, DataFrame, float]:
+    """
+    :param x_train: array X [ feature, examples ]
+    :param y_train: array target [ 2, examples ]
+    :param hidden: Hidden size
+    :param lambda_: L2-Regularization term
+    :param activation: activation function
+    :param features_x: Number of input features
+    :param max_inters: Number of max iteration
+    :param eps: gradient thresholds
+    :return:
+    """
     model = ENeuralN(features_x, hidden, lambda_, activation)
-    mse_errors = model.fit_fista(x_train, y_train, max_inters)
-    return model, mse_errors
+    mse_errors = model.fit_fista(x_train, y_train, max_inters, eps)
+
+    dt = pd.DataFrame(mse_errors, columns=["MSE_error"])
+    dt["iters"] = dt.index
+    dt = dt[["iters", "MSE_error"]].set_index("iters")
+
+    return model, dt, round(mse_errors[-1], 4)
+
+
+def fit_sgd(x_train: np.ndarray, y_train: np.ndarray, hidden: int, lambda_: float = 0,
+            activation=sigmoid, max_inters: int = None, eps: float = 0,
+            lr: float = 0, beta: float = 0, features_x: int = 10) -> Tuple[ENeuralN, DataFrame, float]:
+    """
+    :param x_train: array X [ feature, examples ]
+    :param y_train: array target [ 2, examples ]
+    :param hidden: Hidden size
+    :param lambda_: L2-Regularization term
+    :param activation: activation function
+    :param features_x: Number of input features
+    :param max_inters: Number of max iteration
+    :param eps: gradient thresholds
+    :param lr: learning rate if 0 then will be used 1/L
+    :param beta: momentum term
+
+    """
+    model = ENeuralN(features_x, hidden, lambda_, activation)
+    mse_errors = model.fit_SDG(x_train, y_train, max_inters, lr, beta, eps)
+
+    dt = pd.DataFrame(mse_errors, columns=["MSE_error"])
+    dt["iters"] = dt.index
+    dt = dt[["iters", "MSE_error"]].set_index("iters")
+
+    return model, dt, round(mse_errors[-1], 4)
 
 
 def get_results(model: ENeuralN, x: np.ndarray, y: np.ndarray):
@@ -46,20 +98,16 @@ def get_results(model: ENeuralN, x: np.ndarray, y: np.ndarray):
     return MSE(y, y_pred)
 
 
-def GridSearch_cholesky(train_path: str, test_path: str = None, configs: dict = None):
-    (x_train, y_train), (x_val, y_val), (ts_x, ts_y) = prepare_dataset(train_path, test_path)
+def grid_search_cholesky(configs: dict, train: tuple[np.ndarray, np.ndarray], valid: tuple[np.ndarray, np.ndarray],
+                         test: tuple[np.ndarray, np.ndarray] = None):
     min_error, best_model, best_conf = sys.maxsize, None, None
 
     progress = tqdm(ParameterGrid(configs))
     for single_conf in progress:
 
-        hidden = single_conf["hidden"]
-        lambda_ = single_conf["regularization"]
-        activation = single_conf["activation_fun"]
-
-        model = fit_cholesky(x_train, y_train, hidden, lambda_, activation)
-        mse_train = get_results(model, x_train, y_train)
-        mse_val = get_results(model, x_val, y_val)
+        model = fit_cholesky(x_train=train[0], y_train=train[1], **single_conf)
+        mse_train = get_results(model, train[0], train[1])
+        mse_val = get_results(model, valid[0], valid[1])
 
         if mse_val < min_error:
             best_model = model
@@ -71,28 +119,25 @@ def GridSearch_cholesky(train_path: str, test_path: str = None, configs: dict = 
     print("\nThe best configuration is ", best_conf[0])
     print("Train error ", best_conf[1], " Validation error", best_conf[2])
 
-    if test_path is not None:
-        y_test_pred = best_model(ts_x)
-        test_error = MSE(ts_y, y_test_pred)
+    if test is not None:
+        y_test_pred = best_model(test[0])
+        test_error = MSE(test[1], y_test_pred)
         print("Test error ", test_error)
 
 
-def GridSearch_fista(train_path: str, test_path: str = None, configs: dict = None):
-
-    (x_train, y_train), (x_val, y_val), (ts_x, ts_y) = prepare_dataset(train_path, test_path)
+def grid_search_iterative(configs: dict, train: tuple[np.ndarray, np.ndarray], valid: tuple[np.ndarray, np.ndarray],
+                          optimizer: Literal["FISTA", "SGD"] = "SGD",
+                          test: tuple[np.ndarray, np.ndarray] = None):
     min_error, best_model, best_conf = sys.maxsize, None, None
 
     progress = tqdm(ParameterGrid(configs))
     for single_conf in progress:
 
-        hidden = single_conf["hidden"]
-        lambda_ = single_conf["regularization"]
-        activation = single_conf["activation_fun"]
-        max_iter = single_conf["max_iter"]
+        model = fit_fista(x_train=train[0], y_train=train[1], **single_conf) if optimizer == "FISTA" \
+            else fit_sgd(x_train=train[0], y_train=train[1], **single_conf)
 
-        model = fit_fista(x_train, y_train, hidden, lambda_,max_iter, activation)
-        mse_train = get_results(model[0], x_train, y_train)
-        mse_val = get_results(model[0], x_val, y_val)
+        mse_train = get_results(model[0], train[0], train[1])
+        mse_val = get_results(model[0], valid[0], valid[1])
 
         if mse_val < min_error:
             best_model = model[0]
@@ -104,7 +149,7 @@ def GridSearch_fista(train_path: str, test_path: str = None, configs: dict = Non
     print("\nThe best configuration is ", best_conf[0])
     print("Train error ", best_conf[1], " Validation error", best_conf[2])
 
-    if test_path is not None:
-        y_test_pred = best_model(ts_x)
-        test_error = MSE(ts_y, y_test_pred)
+    if test is not None:
+        y_test_pred = best_model(test[0])
+        test_error = MSE(test[1], y_test_pred)
         print("Test error ", test_error)
