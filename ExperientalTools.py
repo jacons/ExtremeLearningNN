@@ -63,11 +63,11 @@ def fit_fista(x_train: np.ndarray, y_train: np.ndarray, w_star: np.ndarray, hidd
     :return:
     """
     model = ENeuralN(features_x, hidden, lambda_, activation, resevoir)
-    mse_errors, gap = model.fit_fista(x_train, y_train, max_inters, eps, w_star)
+    mse_errors, gap, output_gap = model.fit_fista(x_train, y_train, max_inters, eps, w_star)
 
-    dt = pd.DataFrame({"MSE_error": mse_errors, "Gap": gap})
+    dt = pd.DataFrame({"MSE_error": mse_errors, "Gap": gap, "Output Gap": output_gap})
     dt["iters"] = dt.index
-    dt = dt[["iters", "MSE_error","Gap"]].set_index("iters")
+    dt = dt[["iters", "MSE_error","Gap", "Output Gap"]].set_index("iters")
 
     return model, dt, round(mse_errors[-1], 4)
 
@@ -90,11 +90,11 @@ def fit_sgd(x_train: np.ndarray, y_train: np.ndarray, hidden: int, w_star: np.nd
 
     """
     model = ENeuralN(features_x, hidden, lambda_, activation, resevoir)
-    mse_errors, gap = model.fit_SDG(x_train, y_train, max_inters, lr, beta, eps, w_star)
+    mse_errors, gap, output_gap = model.fit_SDG(x_train, y_train, max_inters, lr, beta, eps, w_star)
 
-    dt = pd.DataFrame({"MSE_error": mse_errors, "Gap": gap})
+    dt = pd.DataFrame({"MSE_error": mse_errors, "Gap": gap, "Output Gap": output_gap})
     dt["iters"] = dt.index
-    dt = dt[["iters", "MSE_error", "Gap"]].set_index("iters")
+    dt = dt[["iters", "MSE_error", "Gap", "Output Gap"]].set_index("iters")
 
     return model, dt, round(mse_errors[-1], 4)
 

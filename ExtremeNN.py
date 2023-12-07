@@ -78,6 +78,7 @@ class ENeuralN:
         step_size = 2 / (L + tau)  # step-size changed from 1/L
         mse_errors = []
         gaps = []
+        output_gaps = []
         grad_zk = sys.maxsize
 
         while (current_iter < max_iter) and (norm(grad_zk) > eps):
@@ -103,9 +104,10 @@ class ENeuralN:
             mse_error = MSE(y, y_pred)  # MSE between the target and the output predicted
             mse_errors.append(mse_error)
             gaps.append(np.linalg.norm(self.w2 - w_star) / np.linalg.norm(w_star))
+            output_gaps.append(np.linalg.norm(y - y_pred) / np.linalg.norm(y))
             current_iter += 1
 
-        return mse_errors, gaps
+        return mse_errors, gaps, output_gaps
 
     def fit_SDG(self, x: ndarray, y: ndarray, max_iter: int,
                 lr: float, beta: float = 0, eps: float = 0, w_star: np.ndarray = None):
@@ -133,6 +135,7 @@ class ENeuralN:
 
         mse_errors = []
         gaps = []
+        output_gaps = []
         grad_w2 = sys.maxsize
         current_iter = 0
 
@@ -150,8 +153,9 @@ class ENeuralN:
             mse_error = MSE(y, y_pred)  # MSE between the target and the output predicted
             mse_errors.append(mse_error)
             gaps.append(np.linalg.norm(self.w2 - w_star) / np.linalg.norm(w_star))
+            output_gaps.append(np.linalg.norm(y - y_pred) / np.linalg.norm(y))
             current_iter += 1
-        return mse_errors, gaps
+        return mse_errors, gaps, output_gaps
 
     def __call__(self, x: ndarray) -> ndarray:
         return self.w2 @ self.resevoir(x)
