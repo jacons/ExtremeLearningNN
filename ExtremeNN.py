@@ -11,7 +11,8 @@ from Utils import maxmin_eigenvalue, MSE
 
 class ENeuralN:
 
-    def __init__(self, features: int, hidden: int, regularization: float, activation):
+    def __init__(self, features: int, hidden: int, regularization: float, activation,
+                 resevoir: np.ndarray):
         """
         Implementation of Extreme Neural network
         :param features: Number of input features
@@ -19,7 +20,11 @@ class ENeuralN:
         :param regularization: L2 regularization alpha
         :param activation: activation function
         """
-        self.w1 = rand(hidden, features)  # resevoir
+        if resevoir is None:
+            self.w1 = np.random.uniform(-1, 1, (hidden, features))  # resevoir
+        else:
+            self.w1 = resevoir.copy()
+
         self.w2 = None  # readout
 
         self.resevoir = lambda x: activation(self.w1 @ x)
@@ -70,7 +75,7 @@ class ENeuralN:
         w2_old = self.w2.copy()
 
         beta, lambda_k_1, current_iter = 0, 0, 0
-        step_size = 2 / (L + tau)  # step-size changed from 1/L
+        step_size = 2 / (L+tau)  # step-size changed from 1/L
         mse_errors = []
         grad_zk = sys.maxsize
 
@@ -113,7 +118,8 @@ class ENeuralN:
         # Perform the first (resevoir) layer
         h = self.resevoir(x)
 
-        lr = 1 / maxmin_eigenvalue(h)[0] if lr <= 0 else lr
+        L, tau = maxmin_eigenvalue(h)
+        lr = 1 / (L + tau) if lr <= 0 else lr
 
         # Initialize with random matrix (random weight)
         self.w2 = np.random.uniform(-1, 1, (2, h.shape[0]))

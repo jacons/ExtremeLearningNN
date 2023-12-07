@@ -11,25 +11,29 @@ from ExtremeNN import ENeuralN
 from Utils import MSE, sigmoid
 
 
-def prepare_dataset(train_path: str, test_path: str = None):
+def prepare_dataset(train_path: str, test_path: str = None, unique: bool = False):
+
     train_set = pd.read_csv(train_path, header=None, index_col=0)
     # We have training set tr_x 1182 columns and 10 rows
     tr_x, tr_y = train_set.iloc[:, :10].to_numpy(), train_set.iloc[:, 10:].to_numpy()
 
-    ts_x, ts_y = None, None
-    if test_path is not None:
-        test_set = pd.read_csv(test_path, header=None, index_col=0)
-        ts_x, ts_y = test_set.iloc[:, :10].to_numpy().T, test_set.iloc[:, 10:].to_numpy().T
+    if not unique:
+        ts_x, ts_y = None, None
+        if test_path is not None:
+            test_set = pd.read_csv(test_path, header=None, index_col=0)
+            ts_x, ts_y = test_set.iloc[:, :10].to_numpy().T, test_set.iloc[:, 10:].to_numpy().T
 
-    x_train, x_val, y_train, y_val = train_test_split(tr_x, tr_y, test_size=0.33)
-    x_train, x_val = x_train.T, x_val.T
-    y_train, y_val = y_train.T, y_val.T
+        x_train, x_val, y_train, y_val = train_test_split(tr_x, tr_y, test_size=0.33)
+        x_train, x_val = x_train.T, x_val.T
+        y_train, y_val = y_train.T, y_val.T
 
-    return (x_train, y_train), (x_val, y_val), (ts_x, ts_y)
+        return (x_train, y_train), (x_val, y_val), (ts_x, ts_y)
+    else:
+        return tr_x.T, tr_y.T
 
 
-def fit_cholesky(x_train: np.ndarray, y_train: np.ndarray, hidden: int,
-                 lambda_: float, activation=sigmoid, features_x: int = 10) -> ENeuralN:
+def fit_cholesky(x_train: np.ndarray, y_train: np.ndarray, hidden: int, lambda_: float,
+                 resevoir: np.ndarray = None, activation=sigmoid, features_x: int = 10) -> ENeuralN:
     """
     :param x_train: array X [ feature, examples ]
     :param y_train: array target [ 2, examples ]
@@ -37,16 +41,18 @@ def fit_cholesky(x_train: np.ndarray, y_train: np.ndarray, hidden: int,
     :param lambda_: L2-Regularization term
     :param activation: activation function
     :param features_x: Number of input features
+    :param resevoir:
     """
-    model = ENeuralN(features_x, hidden, lambda_, activation)
+    model = ENeuralN(features_x, hidden, lambda_, activation, resevoir)
     model.fit_cholesky(x_train, y_train)
     return model
 
 
 def fit_fista(x_train: np.ndarray, y_train: np.ndarray, hidden: int, lambda_: float,
               activation=None, max_inters: int = None, eps: float = 0,
-              features_x: int = 10) -> Tuple[ENeuralN, DataFrame, float]:
+              resevoir: np.ndarray = None, features_x: int = 10) -> Tuple[ENeuralN, DataFrame, float]:
     """
+    :param resevoir:
     :param x_train: array X [ feature, examples ]
     :param y_train: array target [ 2, examples ]
     :param hidden: Hidden size
@@ -57,7 +63,7 @@ def fit_fista(x_train: np.ndarray, y_train: np.ndarray, hidden: int, lambda_: fl
     :param eps: gradient thresholds
     :return:
     """
-    model = ENeuralN(features_x, hidden, lambda_, activation)
+    model = ENeuralN(features_x, hidden, lambda_, activation, resevoir)
     mse_errors = model.fit_fista(x_train, y_train, max_inters, eps)
 
     dt = pd.DataFrame(mse_errors, columns=["MSE_error"])
@@ -68,9 +74,10 @@ def fit_fista(x_train: np.ndarray, y_train: np.ndarray, hidden: int, lambda_: fl
 
 
 def fit_sgd(x_train: np.ndarray, y_train: np.ndarray, hidden: int, lambda_: float = 0,
-            activation=sigmoid, max_inters: int = None, eps: float = 0,
+            activation=sigmoid, max_inters: int = None, eps: float = 0, resevoir: np.ndarray = None,
             lr: float = 0, beta: float = 0, features_x: int = 10) -> Tuple[ENeuralN, DataFrame, float]:
     """
+    :param resevoir:
     :param x_train: array X [ feature, examples ]
     :param y_train: array target [ 2, examples ]
     :param hidden: Hidden size
@@ -83,7 +90,7 @@ def fit_sgd(x_train: np.ndarray, y_train: np.ndarray, hidden: int, lambda_: floa
     :param beta: momentum term
 
     """
-    model = ENeuralN(features_x, hidden, lambda_, activation)
+    model = ENeuralN(features_x, hidden, lambda_, activation, resevoir)
     mse_errors = model.fit_SDG(x_train, y_train, max_inters, lr, beta, eps)
 
     dt = pd.DataFrame(mse_errors, columns=["MSE_error"])
