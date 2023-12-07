@@ -12,7 +12,6 @@ from Utils import MSE, sigmoid
 
 
 def prepare_dataset(train_path: str, test_path: str = None, unique: bool = False):
-
     train_set = pd.read_csv(train_path, header=None, index_col=0)
     # We have training set tr_x 1182 columns and 10 rows
     tr_x, tr_y = train_set.iloc[:, :10].to_numpy(), train_set.iloc[:, 10:].to_numpy()
@@ -48,7 +47,7 @@ def fit_cholesky(x_train: np.ndarray, y_train: np.ndarray, hidden: int, lambda_:
     return model
 
 
-def fit_fista(x_train: np.ndarray, y_train: np.ndarray, hidden: int, lambda_: float,
+def fit_fista(x_train: np.ndarray, y_train: np.ndarray, w_star: np.ndarray, hidden: int, lambda_: float,
               activation=None, max_inters: int = None, eps: float = 0,
               resevoir: np.ndarray = None, features_x: int = 10) -> Tuple[ENeuralN, DataFrame, float]:
     """
@@ -64,16 +63,16 @@ def fit_fista(x_train: np.ndarray, y_train: np.ndarray, hidden: int, lambda_: fl
     :return:
     """
     model = ENeuralN(features_x, hidden, lambda_, activation, resevoir)
-    mse_errors = model.fit_fista(x_train, y_train, max_inters, eps)
+    mse_errors, gap = model.fit_fista(x_train, y_train, max_inters, eps, w_star)
 
-    dt = pd.DataFrame(mse_errors, columns=["MSE_error"])
+    dt = pd.DataFrame({"MSE_error": mse_errors, "Gap": gap})
     dt["iters"] = dt.index
-    dt = dt[["iters", "MSE_error"]].set_index("iters")
+    dt = dt[["iters", "MSE_error","Gap"]].set_index("iters")
 
     return model, dt, round(mse_errors[-1], 4)
 
 
-def fit_sgd(x_train: np.ndarray, y_train: np.ndarray, hidden: int, lambda_: float = 0,
+def fit_sgd(x_train: np.ndarray, y_train: np.ndarray, hidden: int, w_star: np.ndarray, lambda_: float = 0,
             activation=sigmoid, max_inters: int = None, eps: float = 0, resevoir: np.ndarray = None,
             lr: float = 0, beta: float = 0, features_x: int = 10) -> Tuple[ENeuralN, DataFrame, float]:
     """
@@ -91,11 +90,11 @@ def fit_sgd(x_train: np.ndarray, y_train: np.ndarray, hidden: int, lambda_: floa
 
     """
     model = ENeuralN(features_x, hidden, lambda_, activation, resevoir)
-    mse_errors = model.fit_SDG(x_train, y_train, max_inters, lr, beta, eps)
+    mse_errors, gap = model.fit_SDG(x_train, y_train, max_inters, lr, beta, eps, w_star)
 
-    dt = pd.DataFrame(mse_errors, columns=["MSE_error"])
+    dt = pd.DataFrame({"MSE_error": mse_errors, "Gap": gap})
     dt["iters"] = dt.index
-    dt = dt[["iters", "MSE_error"]].set_index("iters")
+    dt = dt[["iters", "MSE_error", "Gap"]].set_index("iters")
 
     return model, dt, round(mse_errors[-1], 4)
 

@@ -55,7 +55,7 @@ class ENeuralN:
     def calc_lambda(lambda_):
         return (1 + np.sqrt(1 + 4 * np.power(lambda_, 2))) / 2
 
-    def fit_fista(self, x: ndarray, y: ndarray, max_iter: int, eps: float = 0) -> list[float]:
+    def fit_fista(self, x: ndarray, y: ndarray, max_iter: int, eps: float = 0, w_star=None):
         """
         :param x: array X [ feature, examples ]
         :param y: array target [ 2, examples ]
@@ -75,8 +75,9 @@ class ENeuralN:
         w2_old = self.w2.copy()
 
         beta, lambda_k_1, current_iter = 0, 0, 0
-        step_size = 2 / (L+tau)  # step-size changed from 1/L
+        step_size = 2 / (L + tau)  # step-size changed from 1/L
         mse_errors = []
+        gaps = []
         grad_zk = sys.maxsize
 
         while (current_iter < max_iter) and (norm(grad_zk) > eps):
@@ -101,13 +102,15 @@ class ENeuralN:
             y_pred = self.w2 @ h
             mse_error = MSE(y, y_pred)  # MSE between the target and the output predicted
             mse_errors.append(mse_error)
+            gaps.append(np.linalg.norm(self.w2 - w_star) / np.linalg.norm(w_star))
             current_iter += 1
 
-        return mse_errors
+        return mse_errors, gaps
 
     def fit_SDG(self, x: ndarray, y: ndarray, max_iter: int,
-                lr: float, beta: float = 0, eps: float = 0) -> list[float]:
+                lr: float, beta: float = 0, eps: float = 0, w_star: np.ndarray = None):
         """
+        :param w_star:
         :param x: array X [ feature, examples ]
         :param y: array target [ 2, examples ]
         :param max_iter: Number of max iteration
@@ -129,6 +132,7 @@ class ENeuralN:
         w2_old_old = self.w2.copy()
 
         mse_errors = []
+        gaps = []
         grad_w2 = sys.maxsize
         current_iter = 0
 
@@ -145,8 +149,9 @@ class ENeuralN:
             y_pred = self.w2 @ h
             mse_error = MSE(y, y_pred)  # MSE between the target and the output predicted
             mse_errors.append(mse_error)
+            gaps.append(np.linalg.norm(self.w2 - w_star) / np.linalg.norm(w_star))
             current_iter += 1
-        return mse_errors
+        return mse_errors, gaps
 
     def __call__(self, x: ndarray) -> ndarray:
         return self.w2 @ self.resevoir(x)
