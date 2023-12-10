@@ -23,7 +23,7 @@ def tanH(m: ndarray) -> ndarray:
     return np.tanh(m)
 
 
-def MSE(y: ndarray, y_pred: ndarray) -> float:
+def mse(y: ndarray, y_pred: ndarray) -> float:
     """
     Mean square error
     """
@@ -37,10 +37,14 @@ def norm(a: ndarray, b: ndarray) -> ndarray:
     return np.linalg.norm((a - b))
 
 
-def maxmin_eigenvalue(H: ndarray) -> (float, float):
+def max_min_eigenvalue(H: ndarray, lambda_: float) -> (float, float):
     """
-    Compute the hessian of the matrix H and return the maximum and minimum eigenvalue
+    Compute the hessian of the matrix H and return the maximum and minimum eigenvalues
     """
-    hessian = 2 * H @ H.T
+    hessian = 2 * (H @ H.T + lambda_ * np.eye(H.shape[0]))
     eigenvalues = np.linalg.eigvals(hessian)
     return np.max(eigenvalues), np.min(eigenvalues)
+
+
+def get_residual_y(y: ndarray, y_pred: ndarray) -> float:
+    return np.linalg.norm(y - y_pred) / np.linalg.norm(y)

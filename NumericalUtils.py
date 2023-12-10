@@ -5,8 +5,8 @@ from numpy import ndarray, zeros_like, sqrt
 def cholesky(matrix: ndarray) -> ndarray:
     """
     This function implements the Cholesky decomposition in numpy.
-    The matrix is positive definitive can be decomposed in A = "R' x R" where
-    R is "upper triangular". Complexity is equal to O((n^3)/3)
+    The matrix is positive definitive can be decomposed in A = "R.T x R" where
+    R is "upper triangular". The complexity is equal to O((n^3))
     :param matrix: Positive definitive square matrix
     :return: R upper triangular
     """
@@ -41,7 +41,6 @@ def backwardSub(A: ndarray, b: ndarray) -> ndarray:
             acc = 0
             for j in range(i):
                 acc += A[j, i] * x[c, j]
-
             x[c, i] = (b[c, i] - acc) / A[i, i]
 
     return x
@@ -65,7 +64,6 @@ def forwardSub(A: ndarray, b: ndarray) -> ndarray:
             acc = 0
             for j in range(i + 1, A.shape[0]):
                 acc += A[j, i] * x[c, j]
-
             x[c, i] = (b[c, i] - acc) / A[i, i]
 
     return x

@@ -1,18 +1,18 @@
 import sys
+from typing import Literal
 
 import numpy as np
 from numpy import ndarray, eye
 from numpy.linalg import norm
-from numpy.random import rand
 
 from NumericalUtils import cholesky, backwardSub, forwardSub
-from Utils import maxmin_eigenvalue, MSE
+from Utils import max_min_eigenvalue, mse, sigmoid, ReLU, tanH
 
 
 class ENeuralN:
 
-    def __init__(self, features: int, hidden: int, regularization: float, activation,
-                 resevoir: np.ndarray):
+    def __init__(self, features: int, hidden: int, regularization: float,
+                 activation: Literal["sig", "relu", "tanH"] = "sig", resevoir: np.ndarray = None):
         """
         Implementation of Extreme Neural network
         :param features: Number of input features
@@ -20,10 +20,22 @@ class ENeuralN:
         :param regularization: L2 regularization alpha
         :param activation: activation function
         """
+        # -------- Set the resevoir --------
+        # If it is not provided will be generated a random one
         if resevoir is None:
             self.w1 = np.random.uniform(-1, 1, (hidden, features))  # resevoir
         else:
             self.w1 = resevoir.copy()
+        # -------- Set the resevoir --------
+
+        # -------- Set the activation function --------
+        if activation == "sig":
+            activation = sigmoid
+        elif activation == "relu":
+            activation = ReLU
+        else:
+            activation = tanH
+        # -------- Set the activation function --------
 
         self.w2 = None  # readout
 
@@ -41,6 +53,7 @@ class ENeuralN:
         if x.shape[1] < self.w1.shape[0]:
             print("Error")
             return
+
         # Perform the first (resevoir) layer
         h = self.resevoir(x)
         # (1) Apply the cholesky factorization
@@ -55,29 +68,35 @@ class ENeuralN:
     def calc_lambda(lambda_):
         return (1 + np.sqrt(1 + 4 * np.power(lambda_, 2))) / 2
 
-    def fit_fista(self, x: ndarray, y: ndarray, max_iter: int, eps: float = 0, w_star=None):
+    def fit_fista(self, x: ndarray, y: ndarray, max_iter: int, eps: float = 0) -> list[ndarray]:
         """
         :param x: array X [ feature, examples ]
         :param y: array target [ 2, examples ]
         :param max_iter: Number of max iteration
-        :param eps: gradient threshold
+        :param eps: gradient thresholds
         :return:
         """
         # Perform the first (resevoir) layer
         h = self.resevoir(x)
 
         # Perform the lipschitz constant
-        L, tau = maxmin_eigenvalue(h)
+        L, tau = max_min_eigenvalue(H=h, lambda_=self.regularization)
 
         # Initialize with random matrix (random weight)
         self.w2 = np.random.uniform(-1, 1, (2, h.shape[0]))
         # "Previous weight"
         w2_old = self.w2.copy()
 
+        # We have: beta (dynamic momentum term), lambda_k_1 (lambda k+1)
+        # current_iter (Current iteration)
         beta, lambda_k_1, current_iter = 0, 0, 0
-        step_size = 2 / (L + tau)  # step-size changed from 1/L
-        mse_errors = []
-        gaps = []
+
+        # fixed step-size
+        step_size = 2 / (L + tau)
+
+        # List of w, one for each iteration
+        weights = []
+
         grad_zk = sys.maxsize
 
         while (current_iter < max_iter) and (norm(grad_zk) > eps):
@@ -87,7 +106,7 @@ class ENeuralN:
             # ---- Gradient ----
 
             # ---- Update rule ----
-            self.w2 = z_k - step_size * grad_zk - self.regularization * self.w2
+            self.w2 = z_k - step_size * (grad_zk - 2 * self.regularization * self.w2)
             # ---- Update rule ----
 
             # ---- Update "beta" ----
@@ -98,19 +117,14 @@ class ENeuralN:
 
             w2_old = self.w2.copy()
 
-            # output predicted
-            y_pred = self.w2 @ h
-            mse_error = MSE(y, y_pred)  # MSE between the target and the output predicted
-            mse_errors.append(mse_error)
-            gaps.append(np.linalg.norm(self.w2 - w_star) / np.linalg.norm(w_star))
+            weights.append(self.w2.copy())
             current_iter += 1
 
-        return mse_errors, gaps
+        return weights
 
     def fit_SDG(self, x: ndarray, y: ndarray, max_iter: int,
-                lr: float, beta: float = 0, eps: float = 0, w_star: np.ndarray = None):
+                lr: float, beta: float = 0, eps: float = 0):
         """
-        :param w_star:
         :param x: array X [ feature, examples ]
         :param y: array target [ 2, examples ]
         :param max_iter: Number of max iteration
@@ -121,7 +135,7 @@ class ENeuralN:
         # Perform the first (resevoir) layer
         h = self.resevoir(x)
 
-        L, tau = maxmin_eigenvalue(h)
+        L, tau = max_min_eigenvalue(h, self.regularization)
         lr = 1 / (L + tau) if lr <= 0 else lr
 
         # Initialize with random matrix (random weight)
@@ -131,27 +145,22 @@ class ENeuralN:
         w2_old = self.w2.copy()
         w2_old_old = self.w2.copy()
 
-        mse_errors = []
-        gaps = []
+        weights = []
         grad_w2 = sys.maxsize
         current_iter = 0
 
         while (current_iter < max_iter) and (norm(grad_w2) > eps):
             grad_w2 = (w2_old @ h - y) @ h.T
             # ---- Update rule ----
-            self.w2 = w2_old - lr * grad_w2 + beta * (w2_old - w2_old_old) - self.regularization * self.w2
+            self.w2 = w2_old - lr * (grad_w2 + beta * (w2_old - w2_old_old) + 2 * self.regularization * self.w2)
             # ---- Update rule ----
 
             w2_old_old = w2_old.copy()
             w2_old = self.w2.copy()
 
-            # output predicted
-            y_pred = self.w2 @ h
-            mse_error = MSE(y, y_pred)  # MSE between the target and the output predicted
-            mse_errors.append(mse_error)
-            gaps.append(np.linalg.norm(self.w2 - w_star) / np.linalg.norm(w_star))
+            weights.append(self.w2.copy())
             current_iter += 1
-        return mse_errors, gaps
+        return weights
 
     def __call__(self, x: ndarray) -> ndarray:
         return self.w2 @ self.resevoir(x)
