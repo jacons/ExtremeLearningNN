@@ -106,7 +106,7 @@ class ENeuralN:
             # ---- Gradient ----
 
             # ---- Update rule ----
-            self.w2 = z_k - step_size * (grad_zk - 2 * self.regularization * self.w2)
+            self.w2 = z_k - step_size * grad_zk - self.regularization * self.w2
             # ---- Update rule ----
 
             # ---- Update "beta" ----
@@ -122,6 +122,48 @@ class ENeuralN:
 
         return weights
 
+    def fit_fista2(self, x: ndarray, y: ndarray, max_iter: int, eps: float = 0) -> list[ndarray]:
+
+        # Perform the first (resevoir) layer
+        h = self.resevoir(x)
+        # Perform the lipschitz constant
+        L, tau = max_min_eigenvalue(H=h, lambda_=self.regularization)
+        # Initialize with random matrix (random weight)
+        self.w2 = np.random.uniform(-1, 1, (2, h.shape[0]))
+        # "Previous weight"
+        w2_old = self.w2.copy()
+
+        # We have: beta (dynamic momentum term), lambda_k_1 (lambda k+1)
+        # current_iter (Current iteration)
+        beta, lambda_k_1, current_iter = 0, 0, 0
+
+        # fixed step-size
+        step_size = 2 / (L + tau)
+        # List of w, one for each iteration
+        weights = []
+
+        z = np.zeros_like(self.w2)
+        norm_grad = sys.maxsize
+
+        def grad(c):
+            return c @ (h @ h.T) - y @ h.T + self.regularization * c
+
+        while (current_iter < max_iter) and (norm_grad > eps):
+            lambda_k = self.calc_lambda(lambda_k_1)
+
+            grad_z = grad(z)
+            self.w2 = z - step_size * grad_z
+
+            beta = (lambda_k_1 - 1) / lambda_k
+            z = self.w2 + beta * (self.w2 - w2_old)
+            w2_old = self.w2.copy()
+
+            weights.append(self.w2.copy())
+            current_iter += 1
+            norm_grad = norm(grad_z)
+
+        return weights
+
     def fit_SDG(self, x: ndarray, y: ndarray, max_iter: int,
                 lr: float, beta: float = 0, eps: float = 0):
         """
@@ -134,32 +176,39 @@ class ENeuralN:
         """
         # Perform the first (resevoir) layer
         h = self.resevoir(x)
-
+        # Perform the lipschitz constant
         L, tau = max_min_eigenvalue(h, self.regularization)
-        lr = 1 / (L + tau) if lr <= 0 else lr
-
         # Initialize with random matrix (random weight)
         self.w2 = np.random.uniform(-1, 1, (2, h.shape[0]))
-
         # "Previous weight"
         w2_old = self.w2.copy()
-        w2_old_old = self.w2.copy()
 
-        weights = []
-        grad_w2 = sys.maxsize
+        # current_iter (Current iteration)
         current_iter = 0
 
-        while (current_iter < max_iter) and (norm(grad_w2) > eps):
-            grad_w2 = (w2_old @ h - y) @ h.T
+        # fixed step-size
+        lr = 1 / (L + tau) if lr <= 0 else lr
+        # List of w, one for each iteration
+        weights = []
+
+        norm_grad = sys.maxsize
+
+        def grad(c):
+            return c @ (h @ h.T) - y @ h.T + self.regularization * c
+
+        while (current_iter < max_iter) and (norm_grad > eps):
+
+            grad_w2 = grad(self.w2) - beta * (self.w2 - w2_old)
             # ---- Update rule ----
-            self.w2 = w2_old - lr * (grad_w2 + beta * (w2_old - w2_old_old) + 2 * self.regularization * self.w2)
+            self.w2 = self.w2 - lr * grad_w2
             # ---- Update rule ----
 
-            w2_old_old = w2_old.copy()
             w2_old = self.w2.copy()
 
             weights.append(self.w2.copy())
             current_iter += 1
+            norm_grad = norm(grad_w2)
+
         return weights
 
     def __call__(self, x: ndarray) -> ndarray:

@@ -59,6 +59,7 @@ def fit_fista(x_train: np.ndarray, y_train: np.ndarray,
               max_inters: int = None,
               eps: float = 0,
               resevoir: np.ndarray = None,
+              w_star=None,
               features_x: int = 10) -> Tuple[ENeuralN, DataFrame, float]:
     """
 
@@ -77,29 +78,33 @@ def fit_fista(x_train: np.ndarray, y_train: np.ndarray,
     model = ENeuralN(features_x, hidden, lambda_, activation, resevoir)
     H = model.resevoir(x_train)
 
-    weights = model.fit_fista(x_train, y_train, max_inters, eps)
-    dt, min_error = get_mse_residuals(weights, y_train, minimum, H)
+    weights = model.fit_fista2(x_train, y_train, max_inters, eps)
+    dt, min_error = get_mse_residuals(weights, y_train, minimum, H,w_star)
 
     return model, dt, min_error
 
 
-def get_mse_residuals(weights: list[np.ndarray], y_train: np.ndarray, minimum: float, H: np.ndarray):
+def get_mse_residuals(weights: list[np.ndarray], y_train: np.ndarray, minimum: float, H: np.ndarray,
+                      w_start: np.ndarray):
     # tensor (num iteration) x (2) x (hidden)
     weights = np.asarray(weights)
     # tensor (num iteration) x (2) x (num examples)
     y_pred = np.matmul(weights, H)
     # tensor (num iteration) x (2) x (num examples)
-    diff = y_pred - y_train[np.newaxis, :, :]
+    y_diff = y_pred - y_train[np.newaxis, :, :]
+    # tensor (num iteration) x (2) x (h)
+    w_diff = weights - w_start[np.newaxis, :, :]
 
     # tensor (num iteration) x (1)
-    mse_errors = np.power(diff, 2).mean(axis=(1, 2))
-    residual = np.linalg.norm(diff, axis=(1, 2)) / np.linalg.norm(y_train)
+    mse_errors = np.power(y_diff, 2).mean(axis=(1, 2))
 
+    residual = np.linalg.norm(y_diff, axis=(1, 2), ord="fro") / np.linalg.norm(y_train, ord="fro")
     distance = np.log(np.abs(mse_errors - minimum) / np.abs(minimum))
+    abs_gap_sol = np.linalg.norm(w_diff, axis=(1, 2), ord="fro")
 
-    dt = pd.DataFrame({"MSE": mse_errors, "Residual": residual, "Distance": distance})
+    dt = pd.DataFrame({"MSE": mse_errors, "Residual": residual, "Distance": distance, "abs_gap_sol": abs_gap_sol})
     dt["iters"] = dt.index
-    dt = dt[["iters", "MSE", "Residual", "Distance"]].set_index("iters")
+    dt = dt[["iters", "MSE", "Residual", "Distance", "abs_gap_sol"]].set_index("iters")
 
     return dt, round(mse_errors[-1], 4)
 
@@ -114,6 +119,7 @@ def fit_sgd(x_train: np.ndarray, y_train: np.ndarray,
             resevoir: np.ndarray = None,
             lr: float = 0,
             beta: float = 0,
+            w_star=None,
             features_x: int = 10) -> Tuple[ENeuralN, DataFrame, float]:
     """
     :param x_train: array X [ feature, examples ]
@@ -134,7 +140,7 @@ def fit_sgd(x_train: np.ndarray, y_train: np.ndarray,
 
     weights = model.fit_SDG(x_train, y_train, max_inters, lr, beta, eps)
 
-    dt, min_error = get_mse_residuals(weights, y_train, minimum, H)
+    dt, min_error = get_mse_residuals(weights, y_train, minimum, H,w_star)
 
     return model, dt, min_error
 
