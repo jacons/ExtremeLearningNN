@@ -68,94 +68,98 @@ class ENeuralN:
     def calc_lambda(lambda_):
         return (1 + np.sqrt(1 + 4 * np.power(lambda_, 2))) / 2
 
-    def fit_fista(self, x: ndarray, y: ndarray, max_iter: int, eps: float = 0) -> list[ndarray]:
-        """
-        :param x: array X [ feature, examples ]
-        :param y: array target [ 2, examples ]
-        :param max_iter: Number of max iteration
-        :param eps: gradient thresholds
-        :return:
-        """
-        # Perform the first (resevoir) layer
-        h = self.resevoir(x)
-
-        # Perform the lipschitz constant
-        L, tau = max_min_eigenvalue(H=h, lambda_=self.regularization)
-
-        # Initialize with random matrix (random weight)
-        self.w2 = np.random.uniform(-1, 1, (2, h.shape[0]))
-        # "Previous weight"
-        w2_old = self.w2.copy()
-
-        # We have: beta (dynamic momentum term), lambda_k_1 (lambda k+1)
-        # current_iter (Current iteration)
-        beta, lambda_k_1, current_iter = 0, 0, 0
-
-        # fixed step-size
-        step_size = 2 / (L + tau)
-
-        # List of w, one for each iteration
-        weights = []
-
-        grad_zk = sys.maxsize
-
-        while (current_iter < max_iter) and (norm(grad_zk) > eps):
-            # ---- Gradient ----
-            z_k = w2_old + beta * (self.w2 - w2_old)
-            grad_zk = (z_k @ h - y) @ h.T
-            # ---- Gradient ----
-
-            # ---- Update rule ----
-            self.w2 = z_k - step_size * grad_zk - self.regularization * self.w2
-            # ---- Update rule ----
-
-            # ---- Update "beta" ----
-            lambda_k = self.calc_lambda(lambda_k_1)
-            beta = (lambda_k_1 - 1) / lambda_k
-            lambda_k_1 = lambda_k
-            # ---- Update "beta" ----
-
-            w2_old = self.w2.copy()
-
-            weights.append(self.w2.copy())
-            current_iter += 1
-
-        return weights
+    # def fit_fista(self, x: ndarray, y: ndarray, max_iter: int, eps: float = 0) -> list[ndarray]:
+    #     """
+    #     :param x: array X [ feature, examples ]
+    #     :param y: array target [ 2, examples ]
+    #     :param max_iter: Number of max iteration
+    #     :param eps: gradient thresholds
+    #     :return:
+    #     """
+    #     # Perform the first (resevoir) layer
+    #     h = self.resevoir(x)
+    #
+    #     # Perform the lipschitz constant
+    #     L, tau = max_min_eigenvalue(H=h, lambda_=self.regularization)
+    #
+    #     # Initialize with random matrix (random weight)
+    #     self.w2 = np.random.uniform(-1, 1, (2, h.shape[0]))
+    #     # "Previous weight"
+    #     w2_old = self.w2.copy()
+    #
+    #     # We have: beta (dynamic momentum term), lambda_k_1 (lambda k+1)
+    #     # current_iter (Current iteration)
+    #     beta, lambda_k_1, current_iter = 0, 0, 0
+    #
+    #     # fixed step-size
+    #     step_size = 2 / (L + tau)
+    #
+    #     # List of w, one for each iteration
+    #     weights = []
+    #
+    #     grad_zk = sys.maxsize
+    #
+    #     while (current_iter < max_iter) and (norm(grad_zk) > eps):
+    #         # ---- Gradient ----
+    #         z_k = w2_old + beta * (self.w2 - w2_old)
+    #         grad_zk = (z_k @ h - y) @ h.T
+    #         # ---- Gradient ----
+    #
+    #         # ---- Update rule ----
+    #         self.w2 = z_k - step_size * grad_zk - self.regularization * self.w2
+    #         # ---- Update rule ----
+    #
+    #         # ---- Update "beta" ----
+    #         lambda_k = self.calc_lambda(lambda_k_1)
+    #         beta = (lambda_k_1 - 1) / lambda_k
+    #         lambda_k_1 = lambda_k
+    #         # ---- Update "beta" ----
+    #
+    #         w2_old = self.w2.copy()
+    #
+    #         weights.append(self.w2.copy())
+    #         current_iter += 1
+    #
+    #     return weights
 
     def fit_fista2(self, x: ndarray, y: ndarray, max_iter: int, eps: float = 0) -> list[ndarray]:
 
         # Perform the first (resevoir) layer
         h = self.resevoir(x)
+
         # Perform the lipschitz constant
         L, tau = max_min_eigenvalue(H=h, lambda_=self.regularization)
+
         # Initialize with random matrix (random weight)
         self.w2 = np.random.uniform(-1, 1, (2, h.shape[0]))
         # "Previous weight"
         w2_old = self.w2.copy()
 
-        # We have: beta (dynamic momentum term), lambda_k_1 (lambda k+1)
-        # current_iter (Current iteration)
-        beta, lambda_k_1, current_iter = 0, 0, 0
-
         # fixed step-size
-        step_size = 2 / (L + tau)
+        step_size = 1 / (L + tau)
+
+        # We have:gamma_k_1 (lambda k+1), current_iter (Current iteration)
+        gamma_k_1, current_iter = 0, 0
+
         # List of w, one for each iteration
         weights = []
 
-        z = np.zeros_like(self.w2)
         norm_grad = sys.maxsize
 
         def grad(c):
-            return c @ (h @ h.T) - y @ h.T + self.regularization * c
+            return 2 * (c @ (h @ h.T) - y @ h.T + np.power(self.regularization, 2) * c)
 
         while (current_iter < max_iter) and (norm_grad > eps):
-            lambda_k = self.calc_lambda(lambda_k_1)
+
+            gamma_k = self.calc_lambda(gamma_k_1)
+            beta = (gamma_k_1 - 1) / gamma_k
+            gamma_k_1 = gamma_k
+
+            z = self.w2 + beta * (self.w2 - w2_old)
 
             grad_z = grad(z)
             self.w2 = z - step_size * grad_z
 
-            beta = (lambda_k_1 - 1) / lambda_k
-            z = self.w2 + beta * (self.w2 - w2_old)
             w2_old = self.w2.copy()
 
             weights.append(self.w2.copy())
@@ -194,16 +198,14 @@ class ENeuralN:
         norm_grad = sys.maxsize
 
         def grad(c):
-            return c @ (h @ h.T) - y @ h.T + self.regularization * c
+            return 2 * (c @ (h @ h.T) - y @ h.T + np.power(self.regularization, 2) * c)
 
         while (current_iter < max_iter) and (norm_grad > eps):
-
-            grad_w2 = grad(self.w2) - beta * (self.w2 - w2_old)
+            grad_w2 = grad(self.w2)
             # ---- Update rule ----
-            self.w2 = self.w2 - lr * grad_w2
-            # ---- Update rule ----
-
+            self.w2 = self.w2 - lr * grad_w2 + beta * (self.w2 - w2_old)
             w2_old = self.w2.copy()
+            # ---- Update rule ----
 
             weights.append(self.w2.copy())
             current_iter += 1

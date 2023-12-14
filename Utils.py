@@ -41,7 +41,7 @@ def max_min_eigenvalue(H: ndarray, lambda_: float) -> (float, float):
     """
     Compute the hessian of the matrix H and return the maximum and minimum eigenvalues
     """
-    hessian = 2 * (H @ H.T + lambda_ * np.eye(H.shape[0]))
+    hessian = 2 * (H @ H.T + np.power(lambda_, 2) * np.eye(H.shape[0]))
     eigenvalues = np.linalg.eigvals(hessian)
     return np.max(eigenvalues), np.min(eigenvalues)
 
