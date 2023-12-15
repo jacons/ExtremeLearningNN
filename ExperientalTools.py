@@ -81,6 +81,11 @@ def fit_fista(x_train: np.ndarray, y_train: np.ndarray,
     weights = model.fit_fista2(x_train, y_train, max_inters, eps)
     dt, min_error = get_mse_residuals(weights, y_train, minimum, H,w_star)
 
+    if len(weights) < max_inters:
+        print(f"FISTA reached threshold precision in {len(weights)} iterations")
+    else:
+        print(f"FISTA max iterations reached")
+
     return model, dt, min_error
 
 
@@ -139,6 +144,11 @@ def fit_sgd(x_train: np.ndarray, y_train: np.ndarray,
     H = model.resevoir(x_train)
 
     weights = model.fit_SDG(x_train, y_train, max_inters, lr, beta, eps)
+
+    if len(weights) < max_inters:
+        print(f"SGD reached threshold precision in {len(weights)} iterations")
+    else:
+        print(f"SGD max iterations reached")
 
     dt, min_error = get_mse_residuals(weights, y_train, minimum, H,w_star)
 
