@@ -133,13 +133,13 @@ class ENeuralN:
         # Initialize with random matrix (random weight)
         self.w2 = np.random.uniform(-1, 1, (2, h.shape[0]))
         # "Previous weight"
-        w2_old = self.w2.copy()
+        w2_old, z = self.w2.copy(), self.w2.copy()
 
         # fixed step-size
         step_size = 1 / (L + tau)
 
         # We have:gamma_k_1 (lambda k+1), current_iter (Current iteration)
-        gamma_k_1, current_iter = 0, 0
+        lambda_k_1, current_iter = 0, 0
 
         # List of w, one for each iteration
         weights = []
@@ -147,24 +147,24 @@ class ENeuralN:
         norm_grad = sys.maxsize
 
         def grad(c):
-            return 2 * (c @ (h @ h.T) - y @ h.T + np.power(self.regularization, 2) * c)
+            return 2 * ((c @ (h @ h.T)) - (y @ h.T) + (np.power(self.regularization, 2) * c))
 
         while (current_iter < max_iter) and (norm_grad > eps):
-
-            gamma_k = self.calc_lambda(gamma_k_1)
-            beta = (gamma_k_1 - 1) / gamma_k
-            gamma_k_1 = gamma_k
-
-            z = self.w2 + beta * (self.w2 - w2_old)
-
             grad_z = grad(z)
-            self.w2 = z - step_size * grad_z
+            self.w2 = z - (step_size * grad_z)
+
+            lambda_k = self.calc_lambda(lambda_k_1)
+            beta = (lambda_k_1 - 1) / lambda_k
+            z = self.w2 + (beta * (self.w2 - w2_old))
+            lambda_k_1 = lambda_k
 
             w2_old = self.w2.copy()
 
             weights.append(self.w2.copy())
             current_iter += 1
             norm_grad = norm(grad_z)
+
+            print(f"beta: {beta}, lambda: {lambda_k}, norm_grad: {norm_grad}")
 
         return weights
 
@@ -198,12 +198,12 @@ class ENeuralN:
         norm_grad = sys.maxsize
 
         def grad(c):
-            return 2 * (c @ (h @ h.T) - y @ h.T + np.power(self.regularization, 2) * c)
+            return 2 * ((c @ (h @ h.T)) - (y @ h.T) + (np.power(self.regularization, 2) * c))
 
         while (current_iter < max_iter) and (norm_grad > eps):
             grad_w2 = grad(self.w2)
             # ---- Update rule ----
-            self.w2 = self.w2 - lr * grad_w2 + beta * (self.w2 - w2_old)
+            self.w2 = self.w2 - (lr * grad_w2) + (beta * (self.w2 - w2_old))
             w2_old = self.w2.copy()
             # ---- Update rule ----
 

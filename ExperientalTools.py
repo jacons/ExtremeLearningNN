@@ -105,7 +105,7 @@ def get_mse_residuals(weights: list[np.ndarray], y_train: np.ndarray, minimum: f
 
     residual = np.linalg.norm(y_diff, axis=(1, 2), ord="fro") / np.linalg.norm(y_train, ord="fro")
     distance = np.log(np.abs(mse_errors - minimum) / np.abs(minimum))
-    abs_gap_sol = np.linalg.norm(w_diff, axis=(1, 2), ord="fro")
+    abs_gap_sol = np.linalg.norm(w_diff, axis=(1, 2))
 
     dt = pd.DataFrame({"MSE": mse_errors, "Residual": residual, "Distance": distance, "abs_gap_sol": abs_gap_sol})
     dt["iters"] = dt.index
@@ -143,7 +143,8 @@ def fit_sgd(x_train: np.ndarray, y_train: np.ndarray,
     model = ENeuralN(features_x, hidden, lambda_, activation, resevoir)
     H = model.resevoir(x_train)
 
-    weights = model.fit_SDG(x_train, y_train, max_inters, lr, beta, eps)
+    weights = model.fit_SDG(x=x_train, y=y_train, max_iter=max_inters,
+                            lr=lr, beta=beta, eps=eps)
 
     if len(weights) < max_inters:
         print(f"SGD reached threshold precision in {len(weights)} iterations")
