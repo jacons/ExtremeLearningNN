@@ -90,7 +90,7 @@ def fit_fista(x_train: np.ndarray, y_train: np.ndarray,
 
 
 def get_mse_residuals(weights: list[np.ndarray], y_train: np.ndarray, minimum: float, H: np.ndarray,
-                      w_start: np.ndarray):
+                      w_star: np.ndarray):
     # tensor (num iteration) x (2) x (hidden)
     weights = np.asarray(weights)
     # tensor (num iteration) x (2) x (num examples)
@@ -98,18 +98,20 @@ def get_mse_residuals(weights: list[np.ndarray], y_train: np.ndarray, minimum: f
     # tensor (num iteration) x (2) x (num examples)
     y_diff = y_pred - y_train[np.newaxis, :, :]
     # tensor (num iteration) x (2) x (h)
-    w_diff = weights - w_start[np.newaxis, :, :]
+    w_diff = weights - w_star[np.newaxis, :, :]
 
     # tensor (num iteration) x (1)
     mse_errors = np.power(y_diff, 2).mean(axis=(1, 2))
 
-    residual = np.linalg.norm(y_diff, axis=(1, 2), ord="fro") / np.linalg.norm(y_train, ord="fro")
-    distance = np.log(np.abs(mse_errors - minimum) / np.abs(minimum))
-    abs_gap_sol = np.linalg.norm(w_diff, axis=(1, 2))
+    relative_gap_sol = np.linalg.norm(w_diff, axis=(1, 2), ord="fro") / np.linalg.norm(w_star, ord="fro")
+    relative_gap_pred = np.linalg.norm(y_diff, axis=(1, 2), ord="fro") / np.linalg.norm(y_train, ord="fro")
 
-    dt = pd.DataFrame({"MSE": mse_errors, "Residual": residual, "Distance": distance, "abs_gap_sol": abs_gap_sol})
+    #distance = np.log(np.abs(mse_errors - minimum) / np.abs(minimum))
+    #abs_gap_sol = np.linalg.norm(w_diff, axis=(1, 2))
+
+    dt = pd.DataFrame({"MSE": mse_errors, "Rel_Gap_Sol": relative_gap_sol, "Rel_Gap_pred": relative_gap_pred})
     dt["iters"] = dt.index
-    dt = dt[["iters", "MSE", "Residual", "Distance", "abs_gap_sol"]].set_index("iters")
+    dt = dt[["iters", "MSE", "Rel_Gap_Sol", "Rel_Gap_pred"]].set_index("iters")
 
     return dt, round(mse_errors[-1], 4)
 
