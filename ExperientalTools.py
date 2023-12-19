@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split, ParameterGrid
 from tqdm import tqdm
 
 from ExtremeNN import ENeuralN
-from Utils import mse, get_residual_y
+from Utils import mse, get_rel_gap_pred
 
 
 def prepare_dataset(train_path: str, test_path: str = None, unique: bool = False):
@@ -79,7 +79,7 @@ def fit_fista(x_train: np.ndarray, y_train: np.ndarray,
     H = model.resevoir(x_train)
 
     weights = model.fit_fista2(x_train, y_train, max_inters, eps)
-    dt, min_error = get_mse_residuals(weights, y_train, minimum, H,w_star)
+    dt, min_error = get_mse_residuals(weights, y_train, minimum, H, w_star)
 
     if len(weights) < max_inters:
         print(f"FISTA reached threshold precision in {len(weights)} iterations")
@@ -103,11 +103,11 @@ def get_mse_residuals(weights: list[np.ndarray], y_train: np.ndarray, minimum: f
     # tensor (num iteration) x (1)
     mse_errors = np.power(y_diff, 2).mean(axis=(1, 2))
 
-    relative_gap_sol = np.linalg.norm(w_diff, axis=(1, 2), ord="fro") / np.linalg.norm(w_star, ord="fro")
-    relative_gap_pred = np.linalg.norm(y_diff, axis=(1, 2), ord="fro") / np.linalg.norm(y_train, ord="fro")
+    relative_gap_sol = np.linalg.norm(w_diff, axis=(1, 2)) / np.linalg.norm(w_star)
+    relative_gap_pred = np.linalg.norm(y_diff, axis=(1, 2)) / np.linalg.norm(y_train)
 
-    #distance = np.log(np.abs(mse_errors - minimum) / np.abs(minimum))
-    #abs_gap_sol = np.linalg.norm(w_diff, axis=(1, 2))
+    # distance = np.log(np.abs(mse_errors - minimum) / np.abs(minimum))
+    # abs_gap_sol = np.linalg.norm(w_diff, axis=(1, 2))
 
     dt = pd.DataFrame({"MSE": mse_errors, "Rel_Gap_Sol": relative_gap_sol, "Rel_Gap_pred": relative_gap_pred})
     dt["iters"] = dt.index
@@ -153,14 +153,14 @@ def fit_sgd(x_train: np.ndarray, y_train: np.ndarray,
     else:
         print(f"SGD max iterations reached")
 
-    dt, min_error = get_mse_residuals(weights, y_train, minimum, H,w_star)
+    dt, min_error = get_mse_residuals(weights, y_train, minimum, H, w_star)
 
     return model, dt, min_error
 
 
 def get_results(model: ENeuralN, x: np.ndarray, y: np.ndarray):
     y_pred = model(x)
-    return mse(y, y_pred), get_residual_y(y, y_pred)
+    return mse(y, y_pred), get_rel_gap_pred(y, y_pred=y_pred)
 
 
 def grid_search_cholesky(configs: dict,

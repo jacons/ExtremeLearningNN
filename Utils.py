@@ -46,5 +46,5 @@ def max_min_eigenvalue(H: ndarray, lambda_: float) -> (float, float):
     return np.max(eigenvalues), np.min(eigenvalues)
 
 
-def get_residual_y(y: ndarray, y_pred: ndarray) -> float:
+def get_rel_gap_pred(y: ndarray, y_pred: ndarray) -> float:
     return np.linalg.norm(y - y_pred) / np.linalg.norm(y)
