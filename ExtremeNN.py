@@ -57,7 +57,7 @@ class ENeuralN:
         # Perform the first (resevoir) layer
         h = self.resevoir(x)
         # (1) Apply the cholesky factorization
-        r = cholesky(h @ h.T + self.regularization * eye(h.shape[0])).T
+        r = cholesky(h @ h.T + np.power(self.regularization, 2) * eye(h.shape[0])).T
         # (2) back substitution (r upper triangular)
         z = backwardSub(r, y @ h.T)
         # (3) forward substitution (r.T lower triangular)
@@ -67,60 +67,6 @@ class ENeuralN:
     @staticmethod
     def calc_lambda(lambda_):
         return (1 + np.sqrt(1 + 4 * np.power(lambda_, 2))) / 2
-
-    # def fit_fista(self, x: ndarray, y: ndarray, max_iter: int, eps: float = 0) -> list[ndarray]:
-    #     """
-    #     :param x: array X [ feature, examples ]
-    #     :param y: array target [ 2, examples ]
-    #     :param max_iter: Number of max iteration
-    #     :param eps: gradient thresholds
-    #     :return:
-    #     """
-    #     # Perform the first (resevoir) layer
-    #     h = self.resevoir(x)
-    #
-    #     # Perform the lipschitz constant
-    #     L, tau = max_min_eigenvalue(H=h, lambda_=self.regularization)
-    #
-    #     # Initialize with random matrix (random weight)
-    #     self.w2 = np.random.uniform(-1, 1, (2, h.shape[0]))
-    #     # "Previous weight"
-    #     w2_old = self.w2.copy()
-    #
-    #     # We have: beta (dynamic momentum term), lambda_k_1 (lambda k+1)
-    #     # current_iter (Current iteration)
-    #     beta, lambda_k_1, current_iter = 0, 0, 0
-    #
-    #     # fixed step-size
-    #     step_size = 2 / (L + tau)
-    #
-    #     # List of w, one for each iteration
-    #     weights = []
-    #
-    #     grad_zk = sys.maxsize
-    #
-    #     while (current_iter < max_iter) and (norm(grad_zk) > eps):
-    #         # ---- Gradient ----
-    #         z_k = w2_old + beta * (self.w2 - w2_old)
-    #         grad_zk = (z_k @ h - y) @ h.T
-    #         # ---- Gradient ----
-    #
-    #         # ---- Update rule ----
-    #         self.w2 = z_k - step_size * grad_zk - self.regularization * self.w2
-    #         # ---- Update rule ----
-    #
-    #         # ---- Update "beta" ----
-    #         lambda_k = self.calc_lambda(lambda_k_1)
-    #         beta = (lambda_k_1 - 1) / lambda_k
-    #         lambda_k_1 = lambda_k
-    #         # ---- Update "beta" ----
-    #
-    #         w2_old = self.w2.copy()
-    #
-    #         weights.append(self.w2.copy())
-    #         current_iter += 1
-    #
-    #     return weights
 
     def fit_fista2(self, x: ndarray, y: ndarray, max_iter: int, eps: float = 0) -> list[ndarray]:
 
@@ -164,7 +110,7 @@ class ENeuralN:
             current_iter += 1
             norm_grad = norm(grad_z)
 
-            #print(f"beta: {beta}, lambda: {lambda_k}, norm_grad: {norm_grad}")
+            # print(f"beta: {beta}, lambda: {lambda_k}, norm_grad: {norm_grad}")
 
         return weights
 
