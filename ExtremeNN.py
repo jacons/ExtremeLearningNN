@@ -110,7 +110,11 @@ class ENeuralN:
             current_iter += 1
             norm_grad = norm(grad_z)
 
-            # print(f"beta: {beta}, lambda: {lambda_k}, norm_grad: {norm_grad}")
+            #print(f"norm_grad: {norm_grad}")
+
+        if norm_grad < eps:
+            print(f"Converged in {current_iter} iterations. Norm grad: {norm_grad}")
+
 
         return weights
 
@@ -156,6 +160,9 @@ class ENeuralN:
             weights.append(self.w2.copy())
             current_iter += 1
             norm_grad = norm(grad_w2)
+
+        if norm_grad < eps:
+            print(f"Converged in {current_iter} iterations. Norm grad: {norm_grad}")
 
         return weights
 
