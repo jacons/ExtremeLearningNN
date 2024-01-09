@@ -1,4 +1,5 @@
 import datetime
+import time
 from typing import Literal, Union
 
 import numpy as np
@@ -142,7 +143,6 @@ def fit_fista(x_train: np.ndarray, y_train: np.ndarray,
 
     model = ENeuralN(features_x, hidden, lambda_, activation, resevoir)
     weights = model.fit_fista2(x_train, y_train, max_inters, eps)
-
     end = datetime.datetime.now()
 
     H = model.resevoir(x_train)
@@ -205,7 +205,9 @@ def test_over_regularization(tr_x: np.ndarray, tr_y: np.ndarray, parameters: dic
         condition_number = np.linalg.cond(E)
 
         # Calculate the optimal solution
+        start_optimal = datetime.datetime.now()
         w_star, _, _, _ = np.linalg.lstsq(E, H @ tr_y.T, rcond=-1)
+        end_optimal = datetime.datetime.now()
 
         # -----  CHOLESKY -----
         cholesky = fit_cholesky(tr_x, tr_y, lambda_=LAMBDA_REG, resevoir=resevoir, verbose=True)
@@ -230,6 +232,7 @@ def test_over_regularization(tr_x: np.ndarray, tr_y: np.ndarray, parameters: dic
             "Lambda": LAMBDA_REG,
             "Conditional number": condition_number,
             "Optimal MSE": mse(w_star.T @ H, tr_y),
+            "Optimal Time": (end_optimal - start_optimal).microseconds,
 
             "Cholesky MSE": mse(cholesky["model"](tr_x), tr_y),
             "Cholesky Time": cholesky["elapsed_time"],
@@ -242,7 +245,7 @@ def test_over_regularization(tr_x: np.ndarray, tr_y: np.ndarray, parameters: dic
 
             "Fista MSE": mse(fista["model"](tr_x), tr_y),
             "Fista Time": fista["elapsed_time"],
-            "Fista Iterations": classical_sgd["iterations"],
+            "Fista Iterations": fista["iterations"],
             "Fista Reg_gap_sol": fista_gap_sol,
         }
         results.append(result)
