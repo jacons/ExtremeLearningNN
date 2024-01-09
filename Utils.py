@@ -34,7 +34,7 @@ def norm(a: ndarray, b: ndarray) -> ndarray:
     """
     Norm 2
     """
-    return np.linalg.norm((a - b))
+    return np.linalg.norm((a - b), ord="fro")
 
 
 def max_min_eigenvalue(H: ndarray, lambda_: float) -> (float, float):

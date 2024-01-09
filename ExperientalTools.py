@@ -174,7 +174,7 @@ def get_mse_residuals(weights: list[np.ndarray], y_train: np.ndarray, H: np.ndar
     # tensor (num iteration) x (1)
     mse_errors = np.power(y_diff, 2).mean(axis=(1, 2))
 
-    relative_gap_sol = np.linalg.norm(w_diff, axis=(1, 2)) / np.linalg.norm(w_star)
+    relative_gap_sol = np.linalg.norm(w_diff, axis=(1, 2), ord="fro") / np.linalg.norm(w_star, ord="fro")
 
     results = pd.DataFrame({"MSE": mse_errors, "Rel_Gap_Sol": relative_gap_sol})
     results["iters"] = results.index
@@ -209,21 +209,21 @@ def test_over_regularization(tr_x: np.ndarray, tr_y: np.ndarray, parameters: dic
 
         # -----  CHOLESKY -----
         cholesky = fit_cholesky(tr_x, tr_y, lambda_=LAMBDA_REG, resevoir=resevoir, verbose=True)
-        cholesky_rel_gap_sol = np.linalg.norm(cholesky["model"].w2 - w_star.T) / np.linalg.norm(w_star)
+        cholesky_rel_gap_sol = np.linalg.norm(cholesky["model"].w2 - w_star.T, ord="fro") / np.linalg.norm(w_star, ord="fro")
         # -----  CHOLESKY -----
 
         # -----  CLASSICAL SGD -----
         classical_sgd = fit_sgd(x_train=tr_x, y_train=tr_y, lambda_=LAMBDA_REG,
                                 max_inters=MAX_ITER, eps=PRECISION,
                                 resevoir=resevoir, w_star=w_star.T, verbose=True)
-        sgd_gap_sol = np.linalg.norm(classical_sgd["model"].w2 - w_star.T) / np.linalg.norm(w_star)
+        sgd_gap_sol = np.linalg.norm(classical_sgd["model"].w2 - w_star.T, ord="fro") / np.linalg.norm(w_star, ord="fro")
         # -----  CLASSICAL SGD -----
 
         # ----- FISTA -----
         fista = fit_fista(x_train=tr_x, y_train=tr_y, lambda_=LAMBDA_REG,
                           max_inters=MAX_ITER, eps=PRECISION,
                           resevoir=resevoir, w_star=w_star.T, verbose=True)
-        fista_gap_sol = np.linalg.norm(fista["model"].w2 - w_star.T) / np.linalg.norm(w_star)
+        fista_gap_sol = np.linalg.norm(fista["model"].w2 - w_star.T, ord="fro") / np.linalg.norm(w_star, ord="fro")
         # ----- FISTA -----
 
         result = {
