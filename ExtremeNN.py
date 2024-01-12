@@ -8,6 +8,8 @@ from numpy.linalg import norm
 from NumericalUtils import cholesky, backwardSub, forwardSub
 from Utils import max_min_eigenvalue, mse, sigmoid, ReLU, tanH
 
+import datetime
+
 
 class ENeuralN:
 
@@ -110,16 +112,15 @@ class ENeuralN:
             current_iter += 1
             norm_grad = norm(grad_z)
 
-            #print(f"norm_grad: {norm_grad}")
+            # print(f"norm_grad: {norm_grad}")
 
         if norm_grad < eps:
             print(f"Converged in {current_iter} iterations. Norm grad: {norm_grad}")
 
-
         return weights
 
     def fit_SDG(self, x: ndarray, y: ndarray, max_iter: int,
-                lr: float, beta: float = 0, eps: float = 0):
+                lr: float, beta: float = 0, eps: float = 0, testing: bool = False) -> list[ndarray]:
         """
         :param x: array X [ feature, examples ]
         :param y: array target [ 2, examples ]
@@ -127,7 +128,11 @@ class ENeuralN:
         :param lr: learning rate if 0 then will be used 1/L
         :param beta: momentum term
         :param eps: gradient threshold
+        :param testing: set to true only if you are testing SGD with many iterations, if true information about elapsed time and norm grad will be printed
         """
+
+        start = datetime.datetime.now()
+
         # Perform the first (resevoir) layer
         h = self.resevoir(x)
         # Perform the lipschitz constant
@@ -150,6 +155,8 @@ class ENeuralN:
         def grad(c):
             return 2 * ((c @ (h @ h.T)) - (y @ h.T) + (np.power(self.regularization, 2) * c))
 
+        it = 0
+
         while (current_iter < max_iter) and (norm_grad > eps):
             grad_w2 = grad(self.w2)
             # ---- Update rule ----
@@ -161,8 +168,31 @@ class ENeuralN:
             current_iter += 1
             norm_grad = norm(grad_w2)
 
+            if testing:
+                if it % 5000 == 0:
+                    elapsed_time = datetime.datetime.now() - start
+                    elapsed_seconds = elapsed_time.total_seconds()
+
+                    # Extract seconds and milliseconds
+                    seconds = int(elapsed_seconds)
+                    milliseconds = int((elapsed_seconds - seconds) * 1000)
+
+                    print(f"step: {it} norm_grad: {norm_grad} time: {seconds}.{milliseconds} (seconds)")
+
+            it += 1
+
         if norm_grad < eps:
             print(f"Converged in {current_iter} iterations. Norm grad: {norm_grad}")
+
+        if testing:
+            elapsed_time = datetime.datetime.now() - start
+            elapsed_seconds = elapsed_time.total_seconds()
+
+            # Extract seconds and milliseconds
+            seconds = int(elapsed_seconds)
+            milliseconds = int((elapsed_seconds - seconds) * 1000)
+
+            print(f"step: {it} norm_grad: {norm_grad} time: {seconds}.{milliseconds} (seconds)")
 
         return weights
 

@@ -75,7 +75,9 @@ def fit_sgd(x_train: np.ndarray, y_train: np.ndarray,
             beta: float = 0,
             w_star: np.ndarray = None,
             features_x: int = 10,
-            verbose: bool = False) -> Union[ENeuralN, dict]:
+            verbose: bool = False,
+            testing: bool = False
+            ) -> Union[ENeuralN, dict]:
     """
 
     :param x_train: array X [ feature, examples ]
@@ -91,16 +93,17 @@ def fit_sgd(x_train: np.ndarray, y_train: np.ndarray,
     :param w_star:
     :param features_x: Number of input features
     :param verbose:
+    :param testing: set to true only if you are testing SGD with many iterations, if true get_mse_residuals will not be computed
     """
     start = datetime.datetime.now()
-
     model = ENeuralN(features_x, hidden, lambda_, activation, resevoir)
-    weights = model.fit_SDG(x=x_train, y=y_train, max_iter=max_inters, lr=lr, beta=beta, eps=eps)
+    weights = model.fit_SDG(x=x_train, y=y_train, max_iter=max_inters, lr=lr, beta=beta, eps=eps, testing=testing)
 
     end = datetime.datetime.now()
 
-    H = model.resevoir(x_train)
-    dt = get_mse_residuals(weights, y_train, H, w_star)
+    if not testing:
+        H = model.resevoir(x_train)
+        dt = get_mse_residuals(weights, y_train, H, w_star)
 
     if verbose:
         output = {
@@ -211,14 +214,16 @@ def test_over_regularization(tr_x: np.ndarray, tr_y: np.ndarray, parameters: dic
 
         # -----  CHOLESKY -----
         cholesky = fit_cholesky(tr_x, tr_y, lambda_=LAMBDA_REG, resevoir=resevoir, verbose=True)
-        cholesky_rel_gap_sol = np.linalg.norm(cholesky["model"].w2 - w_star.T, ord="fro") / np.linalg.norm(w_star, ord="fro")
+        cholesky_rel_gap_sol = np.linalg.norm(cholesky["model"].w2 - w_star.T, ord="fro") / np.linalg.norm(w_star,
+                                                                                                           ord="fro")
         # -----  CHOLESKY -----
 
         # -----  CLASSICAL SGD -----
         classical_sgd = fit_sgd(x_train=tr_x, y_train=tr_y, lambda_=LAMBDA_REG,
                                 max_inters=MAX_ITER, eps=PRECISION,
                                 resevoir=resevoir, w_star=w_star.T, verbose=True)
-        sgd_gap_sol = np.linalg.norm(classical_sgd["model"].w2 - w_star.T, ord="fro") / np.linalg.norm(w_star, ord="fro")
+        sgd_gap_sol = np.linalg.norm(classical_sgd["model"].w2 - w_star.T, ord="fro") / np.linalg.norm(w_star,
+                                                                                                       ord="fro")
         # -----  CLASSICAL SGD -----
 
         # ----- FISTA -----
