@@ -13,8 +13,8 @@ import datetime
 
 class ENeuralN:
 
-    def __init__(self, features: int, hidden: int, regularization: float,
-                 activation: Literal["sig", "relu", "tanH"] = "sig", resevoir: np.ndarray = None):
+    def __init__(self, hidden: int, regularization: float, resevoir: np.ndarray = None, features: int = 10,
+                 activation: Literal["sig", "relu", "tanH"] = "sig"):
         """
         Implementation of Extreme Neural network
         :param features: Number of input features
@@ -120,7 +120,7 @@ class ENeuralN:
         return weights
 
     def fit_SDG(self, x: ndarray, y: ndarray, max_iter: int,
-                lr: float, beta: float = 0, eps: float = 0, testing: bool = False) -> list[ndarray]:
+                lr: float = 0, beta: float = 0, eps: float = 0, testing: bool = False) -> list[ndarray]:
         """
         :param x: array X [ feature, examples ]
         :param y: array target [ 2, examples ]

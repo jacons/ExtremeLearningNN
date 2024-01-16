@@ -1,13 +1,13 @@
 import datetime
-import time
 from typing import Literal, Union
 
 import numpy as np
 import pandas as pd
+from numpy.linalg import norm
 from sklearn.model_selection import train_test_split
 
 from ExtremeNN import ENeuralN
-from Utils import mse, sigmoid
+from Utils import mse, sigmoid, get_gap_sol
 
 
 def prepare_dataset(train_path: str, test_path: str = None, unique: bool = False):
@@ -34,30 +34,28 @@ def fit_cholesky(x_train: np.ndarray, y_train: np.ndarray,
                  hidden: int = 0,
                  lambda_: float = 0,
                  resevoir: np.ndarray = None,
-                 activation: Literal["sig", "relu", "tanH"] = "sig",
-                 features_x: int = 10,
-                 verbose: bool = False) -> Union[ENeuralN, dict]:
+                 w_star: np.ndarray = None,
+                 mode: Literal["verbose", "testing"] = "verbose") -> Union[ENeuralN, dict]:
     """
     :param x_train: array X [ feature, examples ]
     :param y_train: array target [ 2, examples ]
     :param hidden: Hidden size
     :param lambda_: L2-Regularization term
     :param resevoir: Resevoir layer (random if not provided)
-    :param activation: activation function
-    :param features_x: Number of input features
-    :param verbose:
+    :param w_star: 
+    :param mode: if "testing", get_mse_residuals will not be computed
     """
     start = datetime.datetime.now()
 
-    model = ENeuralN(features_x, hidden, lambda_, activation, resevoir)
+    model = ENeuralN(hidden, lambda_, resevoir)
     model.fit_cholesky(x_train, y_train)
-
     end = datetime.datetime.now()
 
-    if verbose:
+    if mode == "verbose":
         output = {
             "model": model,
-            "elapsed_time": (end - start).microseconds
+            "elapsed_time": (end - start).microseconds,
+            "gap_sol": get_gap_sol(model.w2, w_star)
         }
     else:
         output = model
@@ -67,16 +65,12 @@ def fit_cholesky(x_train: np.ndarray, y_train: np.ndarray,
 def fit_sgd(x_train: np.ndarray, y_train: np.ndarray,
             hidden: int = 100,
             lambda_: float = 0,
-            activation: Literal["sig", "relu", "tanH"] = "sig",
             max_inters: int = None,
             eps: float = 0,
             resevoir: np.ndarray = None,
-            lr: float = 0,
-            beta: float = 0,
             w_star: np.ndarray = None,
-            features_x: int = 10,
-            verbose: bool = False,
-            testing: bool = False
+            f_star: np.ndarray = None,
+            mode: Literal["verbose", "testing"] = "verbose",
             ) -> Union[ENeuralN, dict]:
     """
 
@@ -84,33 +78,29 @@ def fit_sgd(x_train: np.ndarray, y_train: np.ndarray,
     :param y_train: array target [ 2, examples ]
     :param hidden: Hidden size
     :param lambda_: L2-Regularization term
-    :param activation: activation function
     :param max_inters: Number of max iteration
     :param eps: gradient thresholds
     :param resevoir: Resevoir layer (random if not provided)
-    :param lr: learning rate if 0 then will be used 1/L
-    :param beta: momentum term
     :param w_star:
-    :param features_x: Number of input features
-    :param verbose:
-    :param testing: set to true only if you are testing SGD with many iterations, if true get_mse_residuals will not be computed
+    :param f_star: 
+    :param mode: if "testing", get_mse_residuals will not be computed
     """
     start = datetime.datetime.now()
-    model = ENeuralN(features_x, hidden, lambda_, activation, resevoir)
-    weights = model.fit_SDG(x=x_train, y=y_train, max_iter=max_inters, lr=lr, beta=beta, eps=eps, testing=testing)
+
+    model = ENeuralN(hidden, lambda_, resevoir)
+    weights = model.fit_SDG(x=x_train, y=y_train, max_iter=max_inters, eps=eps, testing=(mode == "testing"))
 
     end = datetime.datetime.now()
 
-    if not testing:
+    if mode == "verbose":
         H = model.resevoir(x_train)
-        dt = get_mse_residuals(weights, y_train, H, w_star)
+        dt = get_metrics(weights, y_train, H, w_star, f_star)
 
-    if verbose:
         output = {
             "model": model,
             "elapsed_time": (end - start).microseconds,
             "iterations": len(weights),
-            "results": dt,
+            "metrics": dt,
         }
     else:
         output = model
@@ -121,42 +111,42 @@ def fit_sgd(x_train: np.ndarray, y_train: np.ndarray,
 def fit_fista(x_train: np.ndarray, y_train: np.ndarray,
               hidden: int = 100,
               lambda_: float = 0,
-              activation: Literal["sig", "relu", "tanH"] = "sig",
               max_inters: int = None,
               eps: float = 0,
               resevoir: np.ndarray = None,
               w_star: np.ndarray = None,
-              features_x: int = 10,
-              verbose: bool = False) -> Union[ENeuralN, dict]:
+              f_star: np.ndarray = None,
+              mode: Literal["verbose", "testing"] = "verbose",
+              ) -> Union[ENeuralN, dict]:
     """
     :param x_train: array X [ feature, examples ]
     :param y_train: array target [ 2, examples ]
     :param hidden: Hidden size
     :param lambda_: L2-Regularization term
-    :param activation: activation function
     :param max_inters: Number of max iteration
     :param eps: gradient thresholds
     :param resevoir: Resevoir layer (random if not provided)
     :param w_star:
-    :param features_x: Number of input features
-    :param verbose:
+    :param f_star: 
+    :param mode: if "testing", get_mse_residuals will not be computed
     :return:
     """
     start = datetime.datetime.now()
 
-    model = ENeuralN(features_x, hidden, lambda_, activation, resevoir)
+    model = ENeuralN(hidden, lambda_, resevoir)
     weights = model.fit_fista2(x_train, y_train, max_inters, eps)
+
     end = datetime.datetime.now()
 
-    H = model.resevoir(x_train)
-    dt = get_mse_residuals(weights, y_train, H, w_star)
+    if mode == "verbose":
+        H = model.resevoir(x_train)
+        dt = get_metrics(weights, y_train, H, w_star, f_star)
 
-    if verbose:
         output = {
             "model": model,
             "elapsed_time": (end - start).microseconds,
             "iterations": len(weights),
-            "results": dt,
+            "metrics": dt,
         }
     else:
         output = model
@@ -164,24 +154,35 @@ def fit_fista(x_train: np.ndarray, y_train: np.ndarray,
     return output
 
 
-def get_mse_residuals(weights: list[np.ndarray], y_train: np.ndarray, H: np.ndarray, w_star: np.ndarray):
+def get_metrics(weights: list[np.ndarray],
+                y_train: np.ndarray,
+                H: np.ndarray,
+                w_star: np.ndarray,
+                f_star: np.ndarray):
     # tensor (num iteration) x (2) x (hidden)
     weights = np.asarray(weights)
+
     # tensor (num iteration) x (2) x (num examples)
     y_pred = np.matmul(weights, H)
+
     # tensor (num iteration) x (2) x (num examples)
     y_diff = y_pred - y_train[np.newaxis, :, :]
+
     # tensor (num iteration) x (2) x (h)
     w_diff = weights - w_star[np.newaxis, :, :]
+
+    # tensor (num iteration) x (2) x (num examples)
+    gap_pred = y_pred - f_star[np.newaxis, :, :]
 
     # tensor (num iteration) x (1)
     mse_errors = np.power(y_diff, 2).mean(axis=(1, 2))
 
-    relative_gap_sol = np.linalg.norm(w_diff, axis=(1, 2), ord="fro") / np.linalg.norm(w_star, ord="fro")
+    relative_gap_sol = norm(w_diff, axis=(1, 2), ord="fro") / norm(w_star, ord="fro")
+    relative_gap_pred = norm(gap_pred, axis=(1, 2), ord="fro") / norm(f_star, ord="fro")
 
-    results = pd.DataFrame({"MSE": mse_errors, "Rel_Gap_Sol": relative_gap_sol})
+    results = pd.DataFrame({"MSE": mse_errors, "Gap_Sol": relative_gap_sol, "Gap_Pred": relative_gap_pred})
     results["iters"] = results.index
-    results = results[["iters", "MSE", "Rel_Gap_Sol"]].set_index("iters")
+    results = results[["iters", "MSE", "Gap_Sol", "Gap_Pred"]].set_index("iters")
 
     return results
 
@@ -191,68 +192,67 @@ def get_results(model: ENeuralN, x: np.ndarray, y: np.ndarray):
     return mse(y, y_pred)
 
 
-def test_over_regularization(tr_x: np.ndarray, tr_y: np.ndarray, parameters: dict, regs: list[float]):
-    SIZE_RESERVOIR = parameters["SIZE_RESERVOIR"]
+def test_over_regularization(tr_x: np.ndarray, tr_y: np.ndarray, parameters: dict,
+                             regs: list[float], resevoir_: list[float]):
     MAX_ITER = parameters["MAX_ITER"]
     PRECISION = parameters["PRECISION"]
 
     results = []
 
-    resevoir = np.random.uniform(-1, 1, (SIZE_RESERVOIR, 10))
-    H = sigmoid(resevoir @ tr_x)
+    for size_resevoir in resevoir_:
+        resevoir = np.random.uniform(-1, 1, (size_resevoir, 10))
+        H = sigmoid(resevoir @ tr_x)
 
-    for LAMBDA_REG in regs:
-        E = H @ H.T + np.power(LAMBDA_REG, 2) * np.eye(H.shape[0])
+        for LAMBDA_REG in regs:
+            E = H @ H.T + np.power(LAMBDA_REG, 2) * np.eye(H.shape[0])
 
-        # Perform the conditional number
-        condition_number = np.linalg.cond(E)
+            # Perform the conditional number
+            condition_number = np.linalg.cond(E)
 
-        # Calculate the optimal solution
-        start_optimal = datetime.datetime.now()
-        w_star, _, _, _ = np.linalg.lstsq(E, H @ tr_y.T, rcond=-1)
-        end_optimal = datetime.datetime.now()
+            # Calculate the optimal solution
+            start_optimal = datetime.datetime.now()
+            w_star, _, _, _ = np.linalg.lstsq(E, H @ tr_y.T, rcond=-1)
+            end_optimal = datetime.datetime.now()
 
-        # -----  CHOLESKY -----
-        cholesky = fit_cholesky(tr_x, tr_y, lambda_=LAMBDA_REG, resevoir=resevoir, verbose=True)
-        cholesky_rel_gap_sol = np.linalg.norm(cholesky["model"].w2 - w_star.T, ord="fro") / np.linalg.norm(w_star,
-                                                                                                           ord="fro")
-        # -----  CHOLESKY -----
+            # -----  CHOLESKY -----
+            cholesky = fit_cholesky(tr_x, tr_y, lambda_=LAMBDA_REG, resevoir=resevoir, w_star=w_star.T, mode="verbose")
+            f_star = cholesky["model"](tr_x)
+            # -----  CHOLESKY -----
 
-        # -----  CLASSICAL SGD -----
-        classical_sgd = fit_sgd(x_train=tr_x, y_train=tr_y, lambda_=LAMBDA_REG,
-                                max_inters=MAX_ITER, eps=PRECISION,
-                                resevoir=resevoir, w_star=w_star.T, verbose=True)
-        sgd_gap_sol = np.linalg.norm(classical_sgd["model"].w2 - w_star.T, ord="fro") / np.linalg.norm(w_star,
-                                                                                                       ord="fro")
-        # -----  CLASSICAL SGD -----
+            # -----  CLASSICAL SGD -----
+            classical_sgd = fit_sgd(x_train=tr_x, y_train=tr_y, lambda_=LAMBDA_REG,
+                                    max_inters=MAX_ITER, eps=PRECISION,
+                                    resevoir=resevoir, w_star=w_star.T, f_star=f_star, mode="verbose")
+            # -----  CLASSICAL SGD -----
 
-        # ----- FISTA -----
-        fista = fit_fista(x_train=tr_x, y_train=tr_y, lambda_=LAMBDA_REG,
-                          max_inters=MAX_ITER, eps=PRECISION,
-                          resevoir=resevoir, w_star=w_star.T, verbose=True)
-        fista_gap_sol = np.linalg.norm(fista["model"].w2 - w_star.T, ord="fro") / np.linalg.norm(w_star, ord="fro")
-        # ----- FISTA -----
+            # ----- FISTA -----
+            fista = fit_fista(x_train=tr_x, y_train=tr_y, lambda_=LAMBDA_REG,
+                              max_inters=MAX_ITER, eps=PRECISION,
+                              resevoir=resevoir, w_star=w_star.T, f_star=f_star, mode="verbose")
 
-        result = {
-            "Lambda": LAMBDA_REG,
-            "Conditional number": condition_number,
-            "Optimal MSE": mse(w_star.T @ H, tr_y),
-            "Optimal Time": (end_optimal - start_optimal).microseconds,
+            # ----- FISTA -----
 
-            "Cholesky MSE": mse(cholesky["model"](tr_x), tr_y),
-            "Cholesky Time": cholesky["elapsed_time"],
-            "Cholesky Reg_gap_sol": cholesky_rel_gap_sol,
+            result = {
+                "Size": size_resevoir,
+                "Lambda": LAMBDA_REG,
+                "Conditional number": condition_number,
+                "Optimal MSE": mse(w_star.T @ H, tr_y),
+                "Optimal Time": (end_optimal - start_optimal).microseconds,
 
-            "C-SGD MSE": mse(classical_sgd["model"](tr_x), tr_y),
-            "C-SGD Time": classical_sgd["elapsed_time"],
-            "C-SGD Iterations": classical_sgd["iterations"],
-            "C-SGD Reg_gap_sol": sgd_gap_sol,
+                "Cholesky MSE": mse(cholesky["model"](tr_x), tr_y),
+                "Cholesky Time": cholesky["elapsed_time"],
+                "Cholesky Reg_gap_sol": cholesky["gap_sol"],
 
-            "Fista MSE": mse(fista["model"](tr_x), tr_y),
-            "Fista Time": fista["elapsed_time"],
-            "Fista Iterations": fista["iterations"],
-            "Fista Reg_gap_sol": fista_gap_sol,
-        }
-        results.append(result)
+                "C-SGD MSE": mse(classical_sgd["model"](tr_x), tr_y),
+                "C-SGD Time": classical_sgd["elapsed_time"],
+                "C-SGD Iterations": classical_sgd["iterations"],
+                "C-SGD Reg_gap_sol": classical_sgd["metrics"]["Gap_Sol"],
 
-    return results
+                "Fista MSE": mse(fista["model"](tr_x), tr_y),
+                "Fista Time": fista["elapsed_time"],
+                "Fista Iterations": fista["iterations"],
+                "Fista Reg_gap_sol": fista["metrics"]["Gap_Sol"],
+            }
+            results.append(result)
+
+    return pd.DataFrame(results).T

@@ -44,3 +44,7 @@ def max_min_eigenvalue(H: ndarray, lambda_: float) -> (float, float):
     hessian = 2 * (H @ H.T + np.power(lambda_, 2) * np.eye(H.shape[0]))
     eigenvalues = np.linalg.eigvals(hessian)
     return np.max(eigenvalues), np.min(eigenvalues)
+
+
+def get_gap_sol(w2: ndarray, w2_star: ndarray) -> float:
+    return np.linalg.norm(w2 - w2_star, ord="fro") / np.linalg.norm(w2_star, ord="fro")
