@@ -243,17 +243,21 @@ def test_over_regularization(tr_x: np.ndarray, tr_y: np.ndarray, parameters: dic
 
                 "Cholesky MSE": mse(cholesky["model"](tr_x), tr_y),
                 "Cholesky Time": cholesky["elapsed_time"],
-                "Cholesky Reg_gap_sol": cholesky["gap_sol"],
+                "Cholesky Gap_sol": cholesky["gap_sol"],
 
-                "C-SGD MSE": mse(classical_sgd["model"](tr_x), tr_y),
-                "C-SGD Time": classical_sgd["elapsed_time"],
-                "C-SGD Iterations": classical_sgd["iterations"],
-                "C-SGD Reg_gap_sol": classical_sgd["metrics"]["Gap_Sol"],
+                "SGD MSE": mse(classical_sgd["model"](tr_x), tr_y),
+                "SGD Time": classical_sgd["elapsed_time"],
+                "SGD Iterations": classical_sgd["iterations"],
+                "SGD Gap_sol": classical_sgd["metrics"]["Gap_Sol"].tail(1).values[0],
+                "SGD Gap_pred": classical_sgd["metrics"]["Gap_Pred"].tail(1).values[0],
+
 
                 "Fista MSE": mse(fista["model"](tr_x), tr_y),
                 "Fista Time": fista["elapsed_time"],
                 "Fista Iterations": fista["iterations"],
-                "Fista Reg_gap_sol": fista["metrics"]["Gap_Sol"],
+                "Fista Gap_sol": fista["metrics"]["Gap_Sol"].tail(1).values[0],
+                "Fista Gap_pred": fista["metrics"]["Gap_Pred"].tail(1).values[0],
+
             }
             results.append(result)
 
