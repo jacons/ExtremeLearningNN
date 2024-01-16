@@ -88,7 +88,7 @@ def fit_sgd(x_train: np.ndarray, y_train: np.ndarray,
     start = datetime.datetime.now()
 
     model = ENeuralN(hidden, lambda_, resevoir)
-    weights = model.fit_SDG(x=x_train, y=y_train, max_iter=max_inters, eps=eps, testing=(mode == "testing"))
+    weights, norm_grad = model.fit_SDG(x=x_train, y=y_train, max_iter=max_inters, eps=eps, testing=(mode == "testing"))
 
     end = datetime.datetime.now()
 
@@ -100,6 +100,7 @@ def fit_sgd(x_train: np.ndarray, y_train: np.ndarray,
             "model": model,
             "elapsed_time": (end - start).microseconds,
             "iterations": len(weights),
+            "norm_grad": norm_grad,
             "metrics": dt,
         }
     else:
@@ -134,7 +135,7 @@ def fit_fista(x_train: np.ndarray, y_train: np.ndarray,
     start = datetime.datetime.now()
 
     model = ENeuralN(hidden, lambda_, resevoir)
-    weights = model.fit_fista2(x_train, y_train, max_inters, eps)
+    weights, norm_grad = model.fit_fista2(x_train, y_train, max_inters, eps)
 
     end = datetime.datetime.now()
 
@@ -146,6 +147,7 @@ def fit_fista(x_train: np.ndarray, y_train: np.ndarray,
             "model": model,
             "elapsed_time": (end - start).microseconds,
             "iterations": len(weights),
+            "norm_grad": norm_grad,
             "metrics": dt,
         }
     else:

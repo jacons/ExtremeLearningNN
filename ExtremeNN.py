@@ -70,7 +70,7 @@ class ENeuralN:
     def calc_lambda(lambda_):
         return (1 + np.sqrt(1 + 4 * np.power(lambda_, 2))) / 2
 
-    def fit_fista2(self, x: ndarray, y: ndarray, max_iter: int, eps: float = 0) -> list[ndarray]:
+    def fit_fista2(self, x: ndarray, y: ndarray, max_iter: int, eps: float = 0):
 
         # Perform the first (resevoir) layer
         h = self.resevoir(x)
@@ -117,10 +117,10 @@ class ENeuralN:
         if norm_grad < eps:
             print(f"Converged in {current_iter} iterations. Norm grad: {norm_grad}")
 
-        return weights
+        return weights, norm_grad
 
     def fit_SDG(self, x: ndarray, y: ndarray, max_iter: int,
-                lr: float = 0, beta: float = 0, eps: float = 0, testing: bool = False) -> list[ndarray]:
+                lr: float = 0, beta: float = 0, eps: float = 0, testing: bool = False):
         """
         :param x: array X [ feature, examples ]
         :param y: array target [ 2, examples ]
@@ -128,7 +128,8 @@ class ENeuralN:
         :param lr: learning rate if 0 then will be used 1/L
         :param beta: momentum term
         :param eps: gradient threshold
-        :param testing: set to true only if you are testing SGD with many iterations, if true information about elapsed time and norm grad will be printed
+        :param testing: set to true only if you are testing SGD with many iterations,
+        if true information about elapsed time and norm grad will be printed
         """
 
         start = datetime.datetime.now()
@@ -194,7 +195,7 @@ class ENeuralN:
 
             print(f"step: {it} norm_grad: {norm_grad} time: {seconds}.{milliseconds} (seconds)")
 
-        return weights
+        return weights, norm_grad
 
     def __call__(self, x: ndarray) -> ndarray:
         return self.w2 @ self.resevoir(x)
