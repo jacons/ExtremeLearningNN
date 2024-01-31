@@ -1,3 +1,4 @@
+import datetime
 import sys
 from typing import Literal
 
@@ -6,9 +7,7 @@ from numpy import ndarray, eye
 from numpy.linalg import norm
 
 from NumericalUtils import cholesky, backwardSub, forwardSub
-from Utils import max_min_eigenvalue, mse, sigmoid, ReLU, tanH
-
-import datetime
+from Utils import max_min_eigenvalue, sigmoid, ReLU, tanH
 
 
 class ENeuralN:
@@ -16,11 +15,19 @@ class ENeuralN:
     def __init__(self, hidden: int, regularization: float, resevoir: np.ndarray = None, features: int = 10,
                  activation: Literal["sig", "relu", "tanH"] = "sig"):
         """
-        Implementation of Extreme Neural network
-        :param features: Number of input features
-        :param hidden: Hidden nodes
-        :param regularization: L2 regularization alpha
-        :param activation: activation function
+        Initialize an instance of the Extreme Neural Network.
+
+        Parameters:
+            - hidden (int): Number of hidden nodes in the network.
+            - regularization (float): L2 regularization parameter (alpha).
+            - resevoir (np.ndarray): Reservoir layer (random if not provided).
+            - features (int): Number of input features.
+            - Activation (Literal["sig", "relu", "tanH"]): Activation function to be used ("sig" for sigmoid, "relu" for
+                ReLU, "tanH" for hyperbolic tangent).
+
+        The Extreme Neural Network is a reservoir computing model with an optional activation function.
+        It consists of a resevoir layer (`w1`), readout layer (`w2`), and an activation function applied to
+        the resevoir.
         """
         # -------- Set the resevoir --------
         # If it is not provided will be generated a random one
@@ -46,11 +53,19 @@ class ENeuralN:
 
     def fit_cholesky(self, x: ndarray, y: ndarray):
         """
-        Fit the neural network using the Cholesky factorization
-        to find the best "w" we need to solve the following: w(R.T * R) = Y * H.T
-        :param x: Input dataset
-        :param y: Target
-        :return: None
+        Fit the neural network using the Cholesky factorization.
+
+        To find the best "w", solve the equation: w(R.T * R) = Y * H.T
+
+        Parameters:
+        - x (ndarray): Input dataset.
+        - y (ndarray): Target.
+
+        Returns:
+        - None
+
+        This method applies the Cholesky factorization to solve for the optimal weights (w2) using the
+        resevoir layer (w1).
         """
         if x.shape[1] < self.w1.shape[0]:
             print("Error")
@@ -68,10 +83,37 @@ class ENeuralN:
 
     @staticmethod
     def calc_lambda(lambda_):
+        """
+        Calculate the lambda parameter for FISTA optimization.
+
+        Parameters:
+        - lambda_ (float): Input lambda parameter.
+
+        Returns:
+        - float: Calculated lambda parameter for FISTA optimization.
+
+        This function computes the lambda parameter used in FISTA optimization based on the input lambda.
+        """
         return (1 + np.sqrt(1 + 4 * np.power(lambda_, 2))) / 2
 
     def fit_fista2(self, x: ndarray, y: ndarray, max_iter: int, eps: float = 0):
+        """
+        Fit the neural network using FISTA optimization.
 
+        Parameters:
+        - x (ndarray): Input dataset.
+        - y (ndarray): Target.
+        - max_iter (int): Maximum number of iterations.
+        - eps (float): Gradient threshold for convergence (default is 0).
+
+        Returns:
+        - Tuple: List of weights for each iteration and the final norm of the gradient.
+
+        This method applies FISTA optimization to update the weights of the neural network.
+        It uses a fixed step-size and performs iterations until convergence or reaching the maximum number
+        of iterations.
+
+        """
         # Perform the first (resevoir) layer
         h = self.resevoir(x)
 
@@ -112,8 +154,6 @@ class ENeuralN:
             current_iter += 1
             norm_grad = norm(grad_z)
 
-            # print(f"norm_grad: {norm_grad}")
-
         if norm_grad < eps:
             print(f"Converged in {current_iter} iterations. Norm grad: {norm_grad}")
 
@@ -122,16 +162,25 @@ class ENeuralN:
     def fit_SDG(self, x: ndarray, y: ndarray, max_iter: int,
                 lr: float = 0, beta: float = 0, eps: float = 0, testing: bool = False):
         """
-        :param x: array X [ feature, examples ]
-        :param y: array target [ 2, examples ]
-        :param max_iter: Number of max iteration
-        :param lr: learning rate if 0 then will be used 1/L
-        :param beta: momentum term
-        :param eps: gradient threshold
-        :param testing: set to true only if you are testing SGD with many iterations,
-        if true information about elapsed time and norm grad will be printed
-        """
+        Fit the neural network using Stochastic Gradient Descent (SDG) optimization.
 
+        Parameters:
+            - x (ndarray): Input dataset.
+            - y (ndarray): Target.
+            - max_iter (int): Maximum number of iterations.
+            - lr (float): Learning rate for the gradient descent (default is 0, adaptive if lr <= 0).
+            - beta (float): Momentum term for the gradient descent (default is 0).
+            - eps (float): Gradient threshold for convergence (default is 0).
+            - testing (bool): If True, print additional information during training (default is False).
+
+        Returns:
+            - Tuple: List of weights for each iteration and the final norm of the gradient.
+
+        This method applies Stochastic Gradient Descent optimization to update the weights of the neural network.
+        It uses an adaptive learning rate if lr is not provided.
+        If testing is True, additional information is printed during the training process.
+
+        """
         start = datetime.datetime.now()
 
         # Perform the first (resevoir) layer

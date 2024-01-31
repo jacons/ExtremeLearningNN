@@ -5,10 +5,17 @@ from numpy import ndarray, zeros_like, sqrt
 def cholesky(matrix: ndarray) -> ndarray:
     """
     This function implements the Cholesky decomposition in numpy.
-    The matrix is positive definitive can be decomposed in A = "R.T x R" where
-    R is "upper triangular". The complexity is equal to O((n^3))
-    :param matrix: Positive definitive square matrix
-    :return: R upper triangular
+
+    Parameters:
+        - matrix (ndarray): Positive definite square matrix.
+
+    Returns:
+        - ndarray: Upper triangular matrix R from the Cholesky decomposition A = "R.T x R".
+
+    The Cholesky decomposition is a factorization of a positive definite matrix into the product of a lower triangular
+    matrix and its transpose. For a matrix A, it can be decomposed as A = "R.T x R", where R is an upper triangular
+    matrix. The complexity of this algorithm is O((n^3)), where n is the dimension of the matrix.
+
     """
     r = zeros_like(matrix)  # Upper triangula matrix
     n = matrix.shape[0]  # matrix dimension
@@ -16,8 +23,10 @@ def cholesky(matrix: ndarray) -> ndarray:
     for j in range(n):
         for i in range(j, n):
             if i == j:
+                # Diagonal elements of R
                 r[i, j] = sqrt(matrix[i, j] - np.sum(r[i, :] ** 2))
             else:
+                # Off-diagonal elements of R
                 r[i, j] = (matrix[i, j] - np.sum(r[i, :] * r[j, :])) / r[j, j]
 
     return r  # Upper triangula matrix
@@ -25,11 +34,18 @@ def cholesky(matrix: ndarray) -> ndarray:
 
 def backwardSub(A: ndarray, b: ndarray) -> ndarray:
     """
-    This is a backward substitution for upper triangular matrix. An efficient method to retrieve x by
-    xA = b when A in upper triangular.
-    :param A: A Upper triangula matrix
-    :param b: b vector
-    :return: x vector
+    This function performs backward substitution for an upper triangular matrix.
+
+    Parameters:
+        - A (ndarray): Upper triangular matrix.
+        - b (ndarray): b vector.
+
+    Returns:
+        - ndarray: x vector, solution to the system xA = b.
+
+    Backward substitution is an efficient method to solve a system of linear equations when the matrix A is upper
+    triangular. It starts with the last equation and solves for the corresponding variable, then proceeds backward
+    to find the other variables.
     """
     n, m = b.shape[0], A.shape[0]
     x = np.zeros((n, m))
@@ -48,11 +64,18 @@ def backwardSub(A: ndarray, b: ndarray) -> ndarray:
 
 def forwardSub(A: ndarray, b: ndarray) -> ndarray:
     """
-    This is a forward substitution for lower triangular matrix. An efficient method to retrieve x by
-    xA = b when A in lower triangular.
-    :param A: A lower triangula matrix
-    :param b: b vector
-    :return: x vector
+    This function performs forward substitution for a lower triangular matrix.
+
+    Parameters:
+        - A (ndarray): Lower triangular matrix.
+        - b (ndarray): b vector.
+
+    Returns:
+        - ndarray: x vector, solution to the system xA = b.
+
+    Forward substitution is an efficient method to solve a system of linear equations when the matrix A is
+    lower triangular. It starts with the first equation and solves for the corresponding variable, then proceeds
+    forward to find the other variables.
     """
     n, m = b.shape[0], A.shape[0]
     x = np.zeros((n, m))
