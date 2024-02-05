@@ -15,19 +15,17 @@ class ENeuralN:
     def __init__(self, hidden: int, regularization: float, resevoir: np.ndarray = None, features: int = 10,
                  activation: Literal["sig", "relu", "tanH"] = "sig"):
         """
-        Initialize an instance of the Extreme Neural Network.
+        Initialize an instance of the Extreme Neural Network. The Extreme Neural Network is a reservoir computing
+        model with an optional activation function. It consists of a resevoir layer (`w1`), readout layer (`w2`),
+        and an activation function applied to the resevoir.
 
         Parameters:
-            - hidden (int): Number of hidden nodes in the network.
-            - regularization (float): L2 regularization parameter (alpha).
-            - resevoir (np.ndarray): Reservoir layer (random if not provided).
-            - features (int): Number of input features.
-            - Activation (Literal["sig", "relu", "tanH"]): Activation function to be used ("sig" for sigmoid, "relu" for
+         * hidden (int): Number of hidden nodes in the network.
+         * regularization (float): L2 regularization parameter (alpha).
+         * resevoir (np.ndarray): Reservoir layer (random if not provided).
+         * features (int): Number of input features.
+         * activation (Literal["sig", "relu", "tanH"]): Activation function to be used ("sig" for sigmoid, "relu" for
                 ReLU, "tanH" for hyperbolic tangent).
-
-        The Extreme Neural Network is a reservoir computing model with an optional activation function.
-        It consists of a resevoir layer (`w1`), readout layer (`w2`), and an activation function applied to
-        the resevoir.
         """
         # -------- Set the resevoir --------
         # If it is not provided will be generated a random one
@@ -53,19 +51,14 @@ class ENeuralN:
 
     def fit_cholesky(self, x: ndarray, y: ndarray):
         """
-        Fit the neural network using the Cholesky factorization.
+        Fit the neural network using the Cholesky factorization. This method applies the Cholesky factorization to
+        solve for the optimal weights (w2) using the resevoir layer (w1).
 
         To find the best "w", solve the equation: w(R.T * R) = Y * H.T
 
         Parameters:
-        - x (ndarray): Input dataset.
-        - y (ndarray): Target.
-
-        Returns:
-        - None
-
-        This method applies the Cholesky factorization to solve for the optimal weights (w2) using the
-        resevoir layer (w1).
+         * x (ndarray): Input dataset.
+         * y (ndarray): Target.
         """
         if x.shape[1] < self.w1.shape[0]:
             print("Error")
@@ -84,35 +77,32 @@ class ENeuralN:
     @staticmethod
     def calc_lambda(lambda_):
         """
-        Calculate the lambda parameter for FISTA optimization.
+        Calculate the lambda parameter for FISTA optimization. This function computes the lambda parameter used in
+        FISTA optimization based on the input lambda.
 
         Parameters:
-        - lambda_ (float): Input lambda parameter.
+         * lambda_ (float): Input lambda parameter (a time k).
 
         Returns:
-        - float: Calculated lambda parameter for FISTA optimization.
+         * float: Calculated lambda parameter for FISTA optimization (a time k+1).
 
-        This function computes the lambda parameter used in FISTA optimization based on the input lambda.
         """
         return (1 + np.sqrt(1 + 4 * np.power(lambda_, 2))) / 2
 
-    def fit_fista2(self, x: ndarray, y: ndarray, max_iter: int, eps: float = 0):
+    def fit_fista(self, x: ndarray, y: ndarray, max_iter: int, eps: float = 0):
         """
-        Fit the neural network using FISTA optimization.
+        Fit the neural network using FISTA optimization. This method applies FISTA optimization to update the weights
+        of the neural network. It uses a fixed step-size and performs iterations until convergence or reaching
+        the maximum number of iterations.
 
         Parameters:
-        - x (ndarray): Input dataset.
-        - y (ndarray): Target.
-        - max_iter (int): Maximum number of iterations.
-        - eps (float): Gradient threshold for convergence (default is 0).
+         * x (ndarray): Input dataset.
+         * y (ndarray): Target.
+         * max_iter (int): Maximum number of iterations.
+         * eps (float): Gradient threshold for convergence (default is 0).
 
         Returns:
-        - Tuple: List of weights for each iteration and the final norm of the gradient.
-
-        This method applies FISTA optimization to update the weights of the neural network.
-        It uses a fixed step-size and performs iterations until convergence or reaching the maximum number
-        of iterations.
-
+         * Tuple: List of weights for each iteration and the final norm of the gradient.
         """
         # Perform the first (resevoir) layer
         h = self.resevoir(x)
@@ -159,27 +149,24 @@ class ENeuralN:
 
         return weights, norm_grad
 
-    def fit_SDG(self, x: ndarray, y: ndarray, max_iter: int,
-                lr: float = 0, beta: float = 0, eps: float = 0, testing: bool = False):
+    def fit_GD(self, x: ndarray, y: ndarray, max_iter: int,
+               lr: float = 0, beta: float = 0, eps: float = 0, testing: bool = False):
         """
-        Fit the neural network using Stochastic Gradient Descent (SDG) optimization.
+        Fit the neural network using Gradient Descent (GD) optimization. This method applies Gradient Descent
+        optimization to update the weights of the neural network. It uses an adaptive learning rate if lr is not
+        provided. If testing is True, additional information is printed during the training process.
 
         Parameters:
-            - x (ndarray): Input dataset.
-            - y (ndarray): Target.
-            - max_iter (int): Maximum number of iterations.
-            - lr (float): Learning rate for the gradient descent (default is 0, adaptive if lr <= 0).
-            - beta (float): Momentum term for the gradient descent (default is 0).
-            - eps (float): Gradient threshold for convergence (default is 0).
-            - testing (bool): If True, print additional information during training (default is False).
+         * x (ndarray): Input dataset.
+         * y (ndarray): Target.
+         * max_iter (int): Maximum number of iterations.
+         * lr (float): Learning rate for the gradient descent (default is 0, adaptive if lr <= 0).
+         * beta (float): Momentum term for the gradient descent (default is 0).
+         * eps (float): Gradient threshold for convergence (default is 0).
+         * testing (bool): If True, print additional information during training (default is False).
 
         Returns:
-            - Tuple: List of weights for each iteration and the final norm of the gradient.
-
-        This method applies Stochastic Gradient Descent optimization to update the weights of the neural network.
-        It uses an adaptive learning rate if lr is not provided.
-        If testing is True, additional information is printed during the training process.
-
+         * Tuple: List of weights for each iteration and the final norm of the gradient.
         """
         start = datetime.datetime.now()
 

@@ -12,27 +12,25 @@ from Utils import mse, sigmoid, get_gap_sol
 
 def prepare_dataset(train_path: str, test_path: str = None, unique: bool = False):
     """
-    Prepare dataset for training and testing.
+    Prepare dataset for training and testing. This function reads the training dataset from the specified path and
+    separates it into input features (tr_x) and target values (tr_y). If the `unique` parameter is set to False
+    (default), it further splits the dataset into training and validation sets using a test_size of 0.33. The resulting
+    sets are transposed for compatibility with the neural network model.
 
     Parameters:
-        - train_path (str): Path to the training dataset.
-        - test_path (str): Path to the testing dataset (optional).
-        - Unique (bool): If True, return only the training set
+     * train_path (str): Path to the training dataset.
+     * test_path (str): Path to the testing dataset (optional).
+     * unique (bool): If True, return only the training set
 
     Returns:
-        - Tuple: Training set, validation set, and testing set if applicable.
-
-    This function reads the training dataset from the specified path and separates it into input features (tr_x) and
-    target values (tr_y). If the `unique` parameter is set to False (default), it further splits the dataset into
-    training and validation sets using a test_size of 0.33. The resulting sets are transposed for compatibility with
-    the neural network model.
+     * Tuple: Training set, validation set, and testing set if applicable.
 
     If a test dataset path is provided, it is also processed similarly, and the transposed test set is returned.
-
-        - `Train_set`: Tuple containing training input features and target values.
-        - `val_set`: Tuple containing validation input features and target values.
-        - `test_set`: Tuple containing testing input features and target values (None if `test_path` is not provided).
+     * `Train_set`: Tuple containing training input features and target values.
+     * `val_set`: Tuple containing validation input features and target values.
+     * `test_set`: Tuple containing testing input features and target values (None if `test_path` is not provided).
     """
+
     train_set = pd.read_csv(train_path, header=None, index_col=0)
     # We have training set tr_x 1182 columns and 10 rows
     tr_x, tr_y = train_set.iloc[:, :10].to_numpy(), train_set.iloc[:, 10:].to_numpy()
@@ -59,23 +57,22 @@ def fit_cholesky(x_train: np.ndarray, y_train: np.ndarray,
                  w_star: np.ndarray = None,
                  mode: Literal["verbose", "testing"] = "verbose") -> Union[ENeuralN, dict]:
     """
-        This function fits a neural network model using the Cholesky decomposition method.
-        It initializes the model with the specified parameters and trains it on the provided input features (`x_train`)
-        and target values (`y_train`).
+    This function fits a neural network model using the Cholesky decomposition method.
+    It initializes the model with the specified parameters and trains it on the provided input features (`x_train`)
+    and target values (`y_train`).
 
-        Parameters:
-            - `x_train`: Input features for training.
-            - `y_train`: Target values for training.
-            - `hidden`: Size of the hidden layer in the neural network (default is 0).
-            - `lambda_`: L2-Regularization term (default is 0).
-            - `resevoir`: Resevoir layer for initialization (random if not provided).
-            - `w_star`: Optimal solution for performance comparison.
-            - `mode`: Mode for returning results - "verbose" for detailed information, "testing" for model only.
+    Parameters:
+     * `x_train`: Input features for training.
+     * `y_train`: Target values for training.
+     * `hidden`: Size of the hidden layer in the neural network (default is 0).
+     * `lambda_`: L2-Regularization term (default is 0).
+     * `resevoir`: Resevoir layer for initialization (random if not provided).
+     * `w_star`: Optimal solution for performance comparison.
+     * `mode`: Mode for returning results - "verbose" for detailed information, "testing" for model only.
 
-        Returns:
-            - Trained neural network model if `mode` is "testing".
-            - Dictionary with a model, elapsed time, and gap_sol if `mode` is "verbose".
-
+    Returns:
+     * Trained neural network model if `mode` is "testing".
+     * Dictionary with a model, elapsed time, and gap_sol if `mode` is "verbose".
     """
     start = datetime.datetime.now()
 
@@ -94,44 +91,42 @@ def fit_cholesky(x_train: np.ndarray, y_train: np.ndarray,
     return output
 
 
-def fit_sgd(x_train: np.ndarray, y_train: np.ndarray,
-            hidden: int = 100,
-            lambda_: float = 0,
-            max_inters: int = None,
-            eps: float = 0,
-            resevoir: np.ndarray = None,
-            w_star: np.ndarray = None,
-            f_star: np.ndarray = None,
-            mode: Literal["verbose", "testing"] = "verbose",
-            ) -> Union[ENeuralN, dict]:
+def fit_gd(x_train: np.ndarray, y_train: np.ndarray,
+           hidden: int = 100,
+           lambda_: float = 0,
+           max_inters: int = None,
+           eps: float = 0,
+           resevoir: np.ndarray = None,
+           w_star: np.ndarray = None,
+           f_star: np.ndarray = None,
+           mode: Literal["verbose", "testing"] = "verbose",
+           ) -> Union[ENeuralN, dict]:
     """
-        This function fits a neural network model using Stochastic Gradient Descent.
-        It initializes the model with the specified parameters and trains it on the provided input features (`x_train`)
-        and target values (`y_train`). Additional parameters control the optimization process, including the
-        maximum number of iterations (`max_inters`), gradient threshold (`eps`), and reservoir layer initialization
-        (`resevoir`).
+    This function fits a neural network model using Gradient Descent. It initializes the model with the specified
+    parameters and trains it on the provided input features (`x_train`) and target values (`y_train`). Additional
+    parameters control the optimization process, including the maximum number of iterations (`max_inters`),
+    gradient threshold (`eps`), and reservoir layer initialization (`resevoir`).
 
-        Parameters:
-        - `x_train`: Input features for training.
-            - `y_train`: Target values for training.
-            - `hidden`: Size of the hidden layer in the neural network (default is 100).
-            - `lambda_`: L2-Regularization term (default is 0).
-            - `max_inters`: Number of maximum iterations (None for no limit).
-            - `eps`: Gradient threshold (default is 0).
-            - `resevoir`: Reservoir layer for initialization (random if not provided).
-            - `w_star`: Optimal solution for performance comparison.
-            - `f_star`: Cholesky solution for performance comparison.
-            - `mode`: Mode for returning results - "verbose" for detailed information, "testing" for model only.
+    Parameters:
+     * `x_train`: Input features for training.
+     * `y_train`: Target values for training.
+     * `hidden`: Size of the hidden layer in the neural network (default is 100).
+     * `lambda_`: L2-Regularization term (default is 0).
+     * `max_inters`: Number of maximum iterations (None for no limit).
+     * `eps`: Gradient threshold (default is 0).
+     * `resevoir`: Reservoir layer for initialization (random if not provided).
+     * `w_star`: Optimal solution for performance comparison.
+     * `f_star`: Cholesky solution for performance comparison.
+     * `mode`: Mode for returning results - "verbose" for detailed information, "testing" for model only.
 
-        Returns:
-            - Trained neural network model if `mode` is "testing".
-            - Dictionary with a model, elapsed time, iterations, norm_grad, and metrics if `mode` is "verbose".
-
+    Returns:
+     * Trained neural network model if `mode` is "testing".
+     * Dictionary with a model, elapsed time, iterations, norm_grad, and metrics if `mode` is "verbose".
     """
     start = datetime.datetime.now()
 
     model = ENeuralN(hidden, lambda_, resevoir)
-    weights, norm_grad = model.fit_SDG(x=x_train, y=y_train, max_iter=max_inters, eps=eps, testing=(mode == "testing"))
+    weights, norm_grad = model.fit_GD(x=x_train, y=y_train, max_iter=max_inters, eps=eps, testing=(mode == "testing"))
 
     end = datetime.datetime.now()
 
@@ -169,25 +164,25 @@ def fit_fista(x_train: np.ndarray, y_train: np.ndarray,
     number of iterations (`max_inters`), gradient threshold (`eps`), and reservoir layer initialization (`resevoir`).
 
     Parameters:
-        - `x_train`: Input features for training.
-        - `y_train`: Target values for training.
-        - `hidden`: Size of the hidden layer in the neural network (default is 100).
-        - `lambda_`: L2-Regularization term (default is 0).
-        - `max_inters`: Number of maximum iterations (None for no limit).
-        - `eps`: Gradient threshold (default is 0).
-        - `resevoir`: Reservoir layer for initialization (random if not provided).
-        - `w_star`: Optimal solution for performance comparison.
-        - `f_star`: Cholesky solution for performance comparison.
-        - `mode`: Mode for returning results - "verbose" for detailed information, "testing" for model only.
+     * `x_train`: Input features for training.
+     * `y_train`: Target values for training.
+     * `hidden`: Size of the hidden layer in the neural network (default is 100).
+     * `lambda_`: L2-Regularization term (default is 0).
+     * `max_inters`: Number of maximum iterations (None for no limit).
+     * `eps`: Gradient threshold (default is 0).
+     * `resevoir`: Reservoir layer for initialization (random if not provided).
+     * `w_star`: Optimal solution for performance comparison.
+     * `f_star`: Cholesky solution for performance comparison.
+     * `mode`: Mode for returning results - "verbose" for detailed information, "testing" for model only.
 
     Returns:
-        - Trained neural network model if `mode` is "testing".
-        - Dictionary with a model, elapsed time, iterations, norm_grad, and metrics if `mode` is "verbose".
+     * Trained neural network model if `mode` is "testing".
+     * Dictionary with a model, elapsed time, iterations, norm_grad, and metrics if `mode` is "verbose".
     """
     start = datetime.datetime.now()
 
     model = ENeuralN(hidden, lambda_, resevoir)
-    weights, norm_grad = model.fit_fista2(x_train, y_train, max_inters, eps)
+    weights, norm_grad = model.fit_fista(x_train, y_train, max_inters, eps)
 
     end = datetime.datetime.now()
 
@@ -214,19 +209,19 @@ def get_metrics(weights: list[np.ndarray],
                 w_star: np.ndarray,
                 f_star: np.ndarray):
     """
-    This function calculates metrics such as Mean Squared Error (MSE), Relative Solution Gap (Gap_Sol),
-    and Relative Prediction Gap (Gap_Pred) based on the provided model weights, true target values, reservoir layer,
-    and optimal solutions for comparison.
+    This function calculates metrics such as Mean Squared Error (MSE), Relative Solution Gap (Gap_Sol), and Relative
+    Prediction Gap (Gap_Pred) based on the provided model weights, true target values, reservoir layer, and optimal
+    solutions for comparison.
 
     Parameters:
-        - `weights`: List of model weights for each iteration.
-        - `y_train`: True target values for training.
-        - `H`: Reservoir layer.
-        - `w_star`: Optimal solution for performance comparison.
-        - `F_star`: Cholesky solution for performance comparison.
+     * `weights`: List of model weights for each iteration.
+     * `y_train`: True target values for training.
+     * `H`: Reservoir layer.
+     * `w_star`: Optimal solution for performance comparison.
+     * `f_star`: Cholesky solution for performance comparison.
 
     Returns:
-        - DataFrame: Metrics including MSE, Gap_Sol, and Gap_Pred for each iteration.
+     * DataFrame: Metrics including MSE, Gap_Sol, and Gap_Pred for each iteration.
     """
     # tensor (num iteration) x (2) x (hidden)
     weights = np.asarray(weights)
@@ -262,12 +257,12 @@ def get_results(model: ENeuralN, x: np.ndarray, y: np.ndarray):
     and calculates the Mean Squared Error (MSE) between the model predictions and the true values.
 
     Parameters:
-        - `model`: Trained neural network model.
-        - `x`: Input features for prediction.
-        - `Y`: True target values.
+     * `model`: Trained neural network model.
+     * `x`: Input features for prediction.
+     * `Y`: True target values.
 
     Returns:
-        - float: Mean Squared Error (MSE) between model predictions and true values.
+     * float: Mean Squared Error (MSE) between model predictions and true values.
     """
     y_pred = model(x)
     return mse(y, y_pred)
@@ -276,23 +271,22 @@ def get_results(model: ENeuralN, x: np.ndarray, y: np.ndarray):
 def test_over_regularization(tr_x: np.ndarray, tr_y: np.ndarray, parameters: dict,
                              regs: list[float], resevoir_: list[float]):
     """
-    This function tests different combinations of regularization parameters and reservoir sizes.
-    It evaluates the performance of Cholesky decomposition, Classical SGD, and FISTA optimization methods for each
-    combination.
+    This function tests different combinations of regularization parameters and reservoir sizes. It evaluates the
+    performance of Cholesky decomposition, Classical GD, and FISTA optimization methods for each combination.
 
     Parameters:
-        - `tr_x`: Input features for training.
-        - `tr_y`: Target values for training.
-        - `parameters`: Dictionary containing MAX_ITER and PRECISION.
-        - `regs`: List of regularization parameters.
-        - `Resevoir_`: List of reservoir sizes.
+     * `tr_x`: Input features for training.
+     * `tr_y`: Target values for training.
+     * `parameters`: Dictionary containing MAX_ITER and PRECISION.
+     * `regs`: List of regularization parameters.
+     * `Resevoir_`: List of reservoir sizes.
 
     Returns:
-        - DataFrame: Test results including size, lambda, conditional number, optimal MSE, optimal time,
-                    Cholesky MSE, Cholesky time, Cholesky Gap_sol,
-                    SGD MSE, SGD time, SGD iterations, SGD Gap_sol, SGD Gap_pred,
-                    Fista MSE, Fista time, Fista iterations, Fista Gap_sol, Fista Gap_pred.
+     * DataFrame: Test results including size, lambda, conditional number, optimal MSE, optimal time, Cholesky MSE,
+       Cholesky time, Cholesky Gap_sol, GD MSE, GD time, GD iterations, GD Gap_sol, GD Gap_pred, Fista MSE, Fista time,
+       Fista iterations, Fista Gap_sol, Fista Gap_pred.
     """
+
     MAX_ITER = parameters["MAX_ITER"]
     PRECISION = parameters["PRECISION"]
 
@@ -318,11 +312,11 @@ def test_over_regularization(tr_x: np.ndarray, tr_y: np.ndarray, parameters: dic
             f_star = cholesky["model"](tr_x)
             # -----  CHOLESKY -----
 
-            # -----  CLASSICAL SGD -----
-            classical_sgd = fit_sgd(x_train=tr_x, y_train=tr_y, lambda_=LAMBDA_REG,
-                                    max_inters=MAX_ITER, eps=PRECISION,
-                                    resevoir=resevoir, w_star=w_star.T, f_star=f_star, mode="verbose")
-            # -----  CLASSICAL SGD -----
+            # -----  CLASSICAL GD -----
+            classical_gd = fit_gd(x_train=tr_x, y_train=tr_y, lambda_=LAMBDA_REG,
+                                  max_inters=MAX_ITER, eps=PRECISION,
+                                  resevoir=resevoir, w_star=w_star.T, f_star=f_star, mode="verbose")
+            # -----  CLASSICAL GD -----
 
             # ----- FISTA -----
             fista = fit_fista(x_train=tr_x, y_train=tr_y, lambda_=LAMBDA_REG,
@@ -342,12 +336,11 @@ def test_over_regularization(tr_x: np.ndarray, tr_y: np.ndarray, parameters: dic
                 "Cholesky Time": cholesky["elapsed_time"],
                 "Cholesky Gap_sol": cholesky["gap_sol"],
 
-                "SGD MSE": mse(classical_sgd["model"](tr_x), tr_y),
-                "SGD Time": classical_sgd["elapsed_time"],
-                "SGD Iterations": classical_sgd["iterations"],
-                "SGD Gap_sol": classical_sgd["metrics"]["Gap_Sol"].tail(1).values[0],
-                "SGD Gap_pred": classical_sgd["metrics"]["Gap_Pred"].tail(1).values[0],
-
+                "GD MSE": mse(classical_gd["model"](tr_x), tr_y),
+                "GD Time": classical_gd["elapsed_time"],
+                "GD Iterations": classical_gd["iterations"],
+                "GD Gap_sol": classical_gd["metrics"]["Gap_Sol"].tail(1).values[0],
+                "GD Gap_pred": classical_gd["metrics"]["Gap_Pred"].tail(1).values[0],
 
                 "Fista MSE": mse(fista["model"](tr_x), tr_y),
                 "Fista Time": fista["elapsed_time"],
